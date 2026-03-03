@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BPO Tracker - Módulo Requisiciones</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css?v=2">
+</head>
+
+<body>
+    <!-- Authentication Login View -->
+    <div id="login-view" class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <i class="fa-solid fa-shield-halved"></i>
+                <h2>BPO Tracker</h2>
+                <p>Acceso Restringido</p>
+            </div>
+            <form id="form-login" class="login-form">
+                <div class="form-group">
+                    <label>Usuario (Cédula)</label>
+                    <input type="text" id="login-cedula" placeholder="Ingresa tu número de documento" required>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required>
+                </div>
+                <div class="form-error" id="login-error"></div>
+                <button type="submit" class="btn btn-primary w-100" style="margin-top: 10px;">
+                    <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Application Layout (Hidden initially) -->
+    <div class="layout" id="main-layout" style="display: none;">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <i class="fa-solid fa-briefcase"></i>
+                <h2>BPO Tracker</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" id="nav-m1">
+                    <i class="fa-solid fa-file-signature"></i>
+                    Requisiciones (M1)
+                </a>
+                <a href="#" class="nav-item" id="nav-m2">
+                    <i class="fa-solid fa-water"></i>
+                    Waves (M2)
+                </a>
+                <a href="#" class="nav-item" id="nav-m3">
+                    <i class="fa-solid fa-people-group"></i>
+                    Asignación (M3)
+                </a>
+
+                <div style="margin: 20px 0 10px 0; border-top: 1px solid var(--border); width: 100%;"></div>
+
+                <a href="#" class="nav-item" id="nav-rbac" style="display: none;">
+                    <i class="fa-solid fa-user-shield"></i>
+                    Gestión (Admin)
+                </a>
+
+                <!-- User Profile Display -->
+                <div class="user-profile-sidebar">
+                    <div class="user-profile-avatar">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div class="user-profile-info">
+                        <strong id="sidebar-user-name" style="margin-bottom: 0; align-self: center;">Usuario</strong>
+                    </div>
+                </div>
+                <a href="#" class="nav-item" id="btn-logout" style="color: var(--danger); margin-top: 10px;">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    Cerrar Sesión
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- ===================== MÓDULO 1: REQUISICIONES ===================== -->
+            <div id="module-1" class="module-view active">
+                <header class="page-header">
+                    <div>
+                        <h1>Módulo de Requisiciones</h1>
+                        <p class="subtitle">Gestiona las vacantes y vincula candidatos.</p>
+                    </div>
+                </header>
+
+                <!-- Sección Superior (KPIs) -->
+                <section class="kpi-section">
+                    <div class="kpi-card">
+                        <div class="kpi-icon"><i class="fa-solid fa-briefcase"></i></div>
+                        <div class="kpi-data">
+                            <p class="kpi-title">Requisiciones Activas</p>
+                            <h3 class="kpi-value" id="kpi-active-reqs">0</h3>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon secondary"><i class="fa-solid fa-users"></i></div>
+                        <div class="kpi-data">
+                            <p class="kpi-title">Cupos Totales</p>
+                            <h3 class="kpi-value" id="kpi-total-spots">0</h3>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Sección Media (Formularios) -->
+                <section class="forms-section">
+                    <!-- Formulario 1: Nueva Requisición -->
+                    <div class="card form-card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-plus"></i> Nueva Requisición</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="form-requisition">
+                                <div class="input-grid">
+                                    <div class="form-group">
+                                        <label>Campaña</label>
+                                        <input type="text" id="req-campana" placeholder="Ej: Bolt, Claro" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Perfil / Cargo</label>
+                                        <input type="text" id="req-perfil" placeholder="Ej: Agente Bilingüe" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Salario ($)</label>
+                                        <input type="number" id="req-salario" placeholder="1500" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Cupos</label>
+                                        <input type="number" id="req-cupos" placeholder="10" required min="1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Fecha de Ingreso</label>
+                                        <input type="date" id="req-fecha" required>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary mt-3">Registrar Requisición</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Formulario 2: Nuevo Candidato -->
+                    <div class="card form-card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-user-plus"></i> Nuevo Candidato</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="form-candidate">
+                                <div class="input-grid">
+                                    <div class="form-group">
+                                        <label>Nombre Completo</label>
+                                        <input type="text" id="cand-nombre" placeholder="Ej: Laura Mejia" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Documento ID</label>
+                                        <input type="text" id="cand-doc" placeholder="Número de identidad" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Correo Electrónico</label>
+                                        <input type="email" id="cand-correo" placeholder="laura@email.com" required>
+                                    </div>
+                                    <div class="form-group span-2">
+                                        <label>Requisición Asociada</label>
+                                        <select id="cand-req" required>
+                                            <option value="" disabled selected>Seleccione una requisición...</option>
+                                            <!-- Opciones llenadas por JS -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-secondary mt-3">Registrar Candidato</button>
+                                <p id="cand-error" class="error-msg"></p>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Sección Inferior (Tablas) -->
+                <section class="tables-section">
+                    <!-- Tabla 1: Requisiciones -->
+                    <div class="card table-card">
+                        <div class="card-header">
+                            <h3>Requisiciones Activas</h3>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Campaña</th>
+                                        <th>Cargo</th>
+                                        <th>Cupos</th>
+                                        <th>Salario</th>
+                                        <th>Fecha</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-req-body">
+                                    <tr>
+                                        <td colspan="6" class="text-center p-4">Cargando requisiciones...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tabla 2: Candidatos -->
+                    <div class="card table-card">
+                        <div class="card-header">
+                            <h3>Candidatos Registrados</h3>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre y Correo</th>
+                                        <th>Documento</th>
+                                        <th>Requisición (Campaña - Cargo)</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-cand-body">
+                                    <tr>
+                                        <td colspan="5" class="text-center p-4">Cargando candidatos...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div> <!-- End Module 1 -->
+
+            <!-- ===================== MÓDULO 2: WAVES ===================== -->
+            <div id="module-2" class="module-view" style="display: none;">
+                <header class="page-header">
+                    <div>
+                        <h1>Módulo de Formación (Waves)</h1>
+                        <p class="subtitle">Configura grupos de entrenamiento y visualiza su proyección financiera.</p>
+                    </div>
+                </header>
+
+                <!-- KPIs M2 -->
+                <section class="kpi-section">
+                    <div class="kpi-card">
+                        <div class="kpi-icon"><i class="fa-solid fa-water"></i></div>
+                        <div class="kpi-data">
+                            <p class="kpi-title">Waves Activas</p>
+                            <h3 class="kpi-value" id="kpi-active-waves">0</h3>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon secondary"><i class="fa-solid fa-history"></i></div>
+                        <div class="kpi-data">
+                            <p class="kpi-title">Waves Finalizadas</p>
+                            <h3 class="kpi-value" id="kpi-finished-waves">0</h3>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Formulario Complejo 5 Secciones -->
+                <div class="card form-card mb-4">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-plus"></i> Crear Nueva Wave</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="form-wave">
+                            <div class="grid-2-col">
+                                <!-- Columna Izquierda -->
+                                <div class="col-left">
+                                    <!-- Bloque 1: Datos Generales -->
+                                    <div class="form-block">
+                                        <h4>1. Datos Generales</h4>
+                                        <div class="input-grid">
+                                            <div class="form-group span-2">
+                                                <label>Campaña</label>
+                                                <select id="w-campana" required>
+                                                    <option value="" disabled selected>Cargando campañas...</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Código Wave</label>
+                                                <input type="text" id="w-codigo" placeholder="WAVE-2024-001" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Formador Responsable</label>
+                                                <input type="text" id="w-formador" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Correo Responsable</label>
+                                                <input type="email" id="w-correo-formador" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Correo Área Encargada</label>
+                                                <input type="email" id="w-correo-area" required>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Bloque 3: Requisiciones -->
+                                    <div class="form-block mt-3">
+                                        <h4>3. Asociar Requisiciones</h4>
+                                        <div class="req-checkbox-list" id="w-req-list">
+                                            <p class="text-muted text-sm">Cargando...</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Bloque 4: Recargos -->
+                                    <div class="form-block mt-3">
+                                        <h4>4. Recargos Extras (%)</h4>
+                                        <div class="input-grid">
+                                            <div class="form-group">
+                                                <label>Domingo (%)</label>
+                                                <input type="number" id="w-pct-dom" value="75" min="0">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Festivo (%)</label>
+                                                <input type="number" id="w-pct-fes" value="75" min="0">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Personalizado (%)</label>
+                                                <input type="number" id="w-pct-per" value="0" min="0">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Etiqueta / Motivo</label>
+                                                <input type="text" id="w-lbl-per" placeholder="Turno noche">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Columna Derecha -->
+                                <div class="col-right">
+                                    <!-- Bloque 2: Tiempo y Dinero -->
+                                    <div class="form-block">
+                                        <h4>2. Parámetros de Tiempo y Dinero</h4>
+                                        <div class="input-grid">
+                                            <div class="form-group">
+                                                <label>Horas Diarias</label>
+                                                <input type="number" id="w-horas" value="8" required min="1">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Umbral Día (h)</label>
+                                                <input type="number" id="w-umbral" value="8" required min="1">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Salario Referencia ($)</label>
+                                                <input type="number" id="w-salario" required min="1">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Tarifa Hora ($) <small class="text-muted">(Auto si
+                                                        vacío)</small></label>
+                                                <input type="number" id="w-tarifa">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Cantidad Agentes</label>
+                                                <input type="number" id="w-agentes" required min="1">
+                                                <div class="checkbox-inline mt-1" style="font-size:0.8rem">
+                                                    <input type="checkbox" id="w-auto-agentes"> <label
+                                                        for="w-auto-agentes">Auto desde Requisiciones</label>
+                                                </div>
+                                            </div>
+                                            <div class="form-group span-2">
+                                                <label>Rango de Fechas</label>
+                                                <div class="date-range">
+                                                    <input type="date" id="w-fecha-inicio" required>
+                                                    <span>hasta</span>
+                                                    <input type="date" id="w-fecha-fin" required>
+                                                </div>
+                                            </div>
+                                            <div class="form-group span-2">
+                                                <label>Días Laborales</label>
+                                                <div class="days-checkboxes" id="w-dias">
+                                                    <label><input type="checkbox" value="1" checked> Lun</label>
+                                                    <label><input type="checkbox" value="2" checked> Mar</label>
+                                                    <label><input type="checkbox" value="3" checked> Mié</label>
+                                                    <label><input type="checkbox" value="4" checked> Jue</label>
+                                                    <label><input type="checkbox" value="5" checked> Vie</label>
+                                                    <label><input type="checkbox" value="6"> Sáb</label>
+                                                    <label><input type="checkbox" value="0"> Dom</label>
+                                                </div>
+                                            </div>
+                                            <div class="form-group span-2">
+                                                <div class="switch-container">
+                                                    <label class="switch">
+                                                        <input type="checkbox" id="w-festivos">
+                                                        <span class="slider round"></span>
+                                                    </label>
+                                                    <span class="ml-2 lbl-switch">Incluir Festivos en nómina</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Bloque 5: Proyección -->
+                                    <div class="form-block mt-3 bg-highlight">
+                                        <h4>5. Proyección Dinámica Financiera</h4>
+                                        <div class="checkbox-inline mb-2">
+                                            <input type="checkbox" id="w-gen-checklist" checked>
+                                            <label for="w-gen-checklist">Generar checklist de tareas al crear</label>
+                                        </div>
+
+                                        <div class="projection-box">
+                                            <div class="proj-item">
+                                                <span class="proj-lbl">Días Hábiles:</span>
+                                                <span class="proj-val" id="pj-dias">0</span>
+                                            </div>
+                                            <div class="proj-item">
+                                                <span class="proj-lbl">Horas Totales:</span>
+                                                <span class="proj-val" id="pj-horas">0</span>
+                                            </div>
+                                            <div class="proj-item">
+                                                <span class="proj-lbl">Base Estimada:</span>
+                                                <span class="proj-val" id="pj-base">$0</span>
+                                            </div>
+                                            <div class="proj-item">
+                                                <span class="proj-lbl">Total Recargos:</span>
+                                                <span class="proj-val" id="pj-recargo">$0</span>
+                                            </div>
+                                            <hr>
+                                            <div class="proj-item total">
+                                                <span class="proj-lbl">NÓMINA TOTAL PROYECTADA:</span>
+                                                <span class="proj-val highlight" id="pj-total">$0</span>
+                                            </div>
+                                            <p class="proj-hint" id="pj-hint">Llene Fechas, Salario y Agentes para
+                                                simular.</p>
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary mt-3 w-100 btn-lg">🚀 Crear Wave y
+                                        Guardar Configuración</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Tabla de Historial M2 -->
+                <div class="card table-card mt-4">
+                    <div class="card-header">
+                        <h3>Historial de Waves</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Campaña & Código</th>
+                                    <th>Formador</th>
+                                    <th>Fechas</th>
+                                    <th>Agentes / Nómina ($)</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-waves-body">
+                                <tr>
+                                    <td colspan="6" class="text-center p-4">Cargando waves...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div> <!-- End Module 2 -->
+
+            <!-- ===================== MÓDULO 3: ASIGNACIÓN ===================== -->
+            <div id="module-3" class="module-view" style="display: none;">
+                <header class="page-header"
+                    style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px;">
+                    <div>
+                        <div style="display:flex; align-items:center; gap: 15px;">
+                            <h1 id="m3-wave-title" style="display:none;">Wave: </h1>
+                            <select id="m3-wave-selector" class="form-control"
+                                style="font-size: 1.5rem; font-weight: bold; background: transparent; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 8px; max-width: 400px;">
+                                <option value="" disabled selected>-- Selecciona una Wave --</option>
+                            </select>
+                        </div>
+                        <p class="subtitle mt-2" id="m3-wave-subtitle">Campaña: - | Formador: -</p>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-secondary" id="btn-back-m2"><i class="fa-solid fa-arrow-left"></i> Volver
+                            a Waves</button>
+                        <button class="btn btn-primary" id="btn-go-checklist" disabled><i
+                                class="fa-solid fa-list-check"></i> Ir a Checklist</button>
+                    </div>
+                </header>
+
+                <div class="grid-2-col mt-4">
+                    <!-- Izquierda: Disponibles -->
+                    <div class="card mb-4">
+                        <div class="card-header"
+                            style="display:flex; justify-content:space-between; align-items:center;">
+                            <h3>Candidatos Seleccionados</h3>
+                            <span class="badge" id="m3-count-avail">0 Disponibles</span>
+                        </div>
+                        <div class="card-body">
+                            <input type="text" id="m3-search" class="form-control mb-3"
+                                placeholder="Buscar por nombre o cédula..."
+                                style="width:100%; border:1px solid var(--border); padding:10px; border-radius:6px; background:var(--input-bg); color:white;">
+                            <div class="list-group" id="m3-list-available"
+                                style="max-height: 500px; overflow-y: auto; display:flex; flex-direction:column; gap:8px;">
+                                <div class="text-center text-muted p-4">Por favor selecciona una Wave desde el Módulo 2
+                                    para cargar los candidatos.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Derecha: Asignados -->
+                    <div class="card mb-4" style="border: 1px solid var(--primary);">
+                        <div class="card-header"
+                            style="display:flex; justify-content:space-between; align-items:center; background: rgba(37, 99, 235, 0.1);">
+                            <h3 style="color: var(--primary);"><i class="fa-solid fa-users"></i> Participantes en Wave
+                            </h3>
+                            <span class="badge badge-selected" id="m3-count-assigned"
+                                style="font-size:1rem; padding: 4px 10px;">0 / 0</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group" id="m3-list-assigned"
+                                style="max-height: 500px; overflow-y: auto; display:flex; flex-direction:column; gap:8px;">
+                                <div class="text-center text-muted p-4">Nadie asignado aún.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> <!-- End Module 3 -->
+
+            <!-- ===================== MÓDULO RBAC / ADMIN ===================== -->
+            <div id="module-rbac" class="module-view" style="display: none;">
+                <header class="page-header">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
+                        <div>
+                            <h1>Gestión de Seguridad (RBAC)</h1>
+                            <p class="subtitle mt-2">Administración de Usuarios y Permisos Globales</p>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="grid-2-col mt-4">
+                    <!-- Left: Users Form -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Crear Nuevo Usuario</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="form-user" class="form-grid">
+                                <div class="form-group">
+                                    <label>Nombres</label>
+                                    <input type="text" id="u-nombre" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Apellidos</label>
+                                    <input type="text" id="u-apellido" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Cédula (Usuario)</label>
+                                    <input type="text" id="u-cedula" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Correo Electrónico</label>
+                                    <input type="email" id="u-correo" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Contraseña Temporal</label>
+                                    <input type="password" id="u-password" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Rol del Sistema</label>
+                                    <select id="u-rol" class="form-control" required>
+                                        <option value="" disabled selected>-- Seleccione un Rol --</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="grid-column: 1 / -1;">
+                                    <button type="submit" class="btn btn-primary w-100"><i
+                                            class="fa-solid fa-user-plus"></i> Guardar Usuario</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Right: Existing Users List -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Directorio Activo</h3>
+                        </div>
+                        <div class="card-body" style="padding: 0;">
+                            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Usuario</th>
+                                            <th>Rol</th>
+                                            <th>Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-users-body">
+                                        <!-- JS Users Here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Config: Roles & Permissions -->
+                <div class="card mt-4 mb-4"
+                    style="border: 1px solid var(--primary); background: rgba(37, 99, 235, 0.03);">
+                    <div class="card-header">
+                        <h3 style="color: var(--primary);"><i class="fa-solid fa-unlock-keyhole"></i> Matrices de
+                            Permisos por Rol</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted text-sm mb-4">Selecciona qué módulos puede ver y editar cada perfil. Los
+                            cambios aplican inmediatamente al próximo inicio de sesión del usuario.</p>
+
+                        <div class="grid-3-col" id="roles-container">
+                            <!-- JS Roles Cards Here -->
+                        </div>
+                    </div>
+                </div>
+            </div> <!-- End Module RBAC -->
+
+        </main>
+    </div>
+
+    <!-- Tostadas para notificaciones -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="app.js?v=2"></script>
+</body>
+
+</html>
