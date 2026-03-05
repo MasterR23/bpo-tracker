@@ -12,16 +12,19 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
 // 1. Initial Connection to create DB if it doesn't exist
-const dbInitial = mysql.createConnection({
-    host: 'localhost',
-    user: 'root', // Default XAMPP user
-    password: ''  // Default XAMPP password
-});
+const dbConfig = {
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root', // Default XAMPP user
+    password: process.env.DB_PASSWORD || '', // Default XAMPP password
+    port: process.env.DB_PORT || 3306 // Render usually needs the port specified
+};
+
+const dbInitial = mysql.createConnection(dbConfig);
 
 dbInitial.connect((err) => {
     if (err) {
-        console.error('Error connecting to MySQL for initial setup:', err.message);
-        console.log('POR FAVOR ASEGÚRATE DE QUE MYSQL ESTÁ CORRIENDO EN XAMPP (Puerto 3306)');
+        console.error('Error connecting to MySQL:', err.message);
+        console.log('Si estás en local, asegúrate de que MySQL está corriendo en XAMPP. Si estás en Render, verifica tus variables de entorno.');
         return;
     }
 
@@ -37,15 +40,17 @@ dbInitial.connect((err) => {
 let db;
 
 function initializeDatabaseConnection() {
+    // 2. Connect to the specific database
     db = mysql.createConnection({
-        host: 'localhost',
-        user: 'root',
-        password: '',
-        database: 'bpo_tracker'
+        ...dbConfig,
+        database: process.env.DB_NAME || 'bpo_tracker'
     });
 
     db.connect((err) => {
-        if (err) throw err;
+        if (err) {
+            console.error('Error connecting to bpo_tracker database:', err.message);
+            return;
+        }
         console.log("Connected to bpo_tracker database.");
         createTables();
     });
@@ -122,8 +127,27 @@ function createTables() {
             correo VARCHAR(255) NOT NULL UNIQUE,
             password_hash VARCHAR(255) NOT NULL,
             rol_id INT NOT NULL,
+            must_change_password BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (rol_id) REFERENCES roles(id) ON DELETE RESTRICT
+        )
+    `;
+
+    const createChecklistsTable = `
+        CREATE TABLE IF NOT EXISTS wave_daily_checklists (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            wave_id INT NOT NULL,
+            fecha DATE NOT NULL,
+            trabajo BOOLEAN DEFAULT TRUE,
+            horas_plan INT DEFAULT 0,
+            horas_trabajadas INT DEFAULT 0,
+            ausencias INT DEFAULT 0,
+            quiz_realizado BOOLEAN DEFAULT FALSE,
+            score DECIMAL(5,2) DEFAULT 0,
+            notas TEXT,
+            total_dia DECIMAL(12,2) DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (wave_id) REFERENCES waves(id) ON DELETE CASCADE
         )
     `;
 
@@ -137,36 +161,48 @@ function createTables() {
                     if (err) throw err;
                     db.query(createCandTable, (err) => {
                         if (err) throw err;
+                        db.query(createChecklistsTable, async (err) => {
+                            if (err) throw err;
 
-                        // Check if Admin role exists, if not, create default Roles and Admin User
-                        db.query("SELECT * FROM roles WHERE nombre_rol = 'Admin'", async (err, results) => {
-                            if (results.length === 0) {
-                                // Default Roles
-                                const adminPerms = JSON.stringify(["m1_view", "m1_edit", "m1_delete", "m2_view", "m2_edit", "m3_view", "m3_edit", "m4_view", "admin_panel"]);
-                                const valAdm = ["Admin", adminPerms];
+                            // Check if Admin role exists, if not, create default Roles and Admin User
+                            db.query("SELECT * FROM roles WHERE nombre_rol = 'Admin'", async (err, results) => {
+                                if (results.length === 0) {
+                                    // Default Roles
+                                    const adminPerms = JSON.stringify(["m1_view", "m1_edit", "m1_delete", "m2_view", "m2_edit", "m3_view", "m3_edit", "m4_view", "admin_panel"]);
+                                    const valAdm = ["Admin", adminPerms];
 
-                                const analistaPerms = JSON.stringify(["m1_view", "m1_edit", "m2_view", "m2_edit", "m3_view"]);
-                                const valAna = ["Analista", analistaPerms];
+                                    const analistaPerms = JSON.stringify(["m1_view", "m1_edit", "m2_view", "m2_edit", "m3_view"]);
+                                    const valAna = ["Analista", analistaPerms];
 
-                                const formadorPerms = JSON.stringify(["m2_view", "m3_view", "m4_view"]);
-                                const valFor = ["Formador", formadorPerms];
+                                    const formadorPerms = JSON.stringify(["m2_view", "m3_view", "m4_view"]);
+                                    const valFor = ["Formador", formadorPerms];
 
-                                db.query("INSERT INTO roles (nombre_rol, permisos) VALUES (?,?), (?,?), (?,?)",
-                                    [...valAdm, ...valAna, ...valFor], async (err, rRes) => {
-                                        if (err) console.error("Error creating default roles:", err);
-                                        else {
-                                            // Admin role is insertId
-                                            const adminHash = await bcrypt.hash("admin123", 10);
-                                            db.query("INSERT INTO users (nombre, apellido, cedula, correo, password_hash, rol_id) VALUES (?,?,?,?,?,?)",
-                                                ["Super", "Administrador", "admin", "admin@bpo.com", adminHash, rRes.insertId]
-                                            );
-                                            console.log("Default Admin user created. (User: admin / Pass: admin123)");
-                                        }
-                                    });
-                            }
+                                    db.query("INSERT INTO roles (nombre_rol, permisos) VALUES (?,?), (?,?), (?,?)",
+                                        [...valAdm, ...valAna, ...valFor], async (err, rRes) => {
+                                            if (err) console.error("Error creating default roles:", err);
+                                            else {
+                                                // Admin role is insertId
+                                                const adminHash = await bcrypt.hash("admin123", 10);
+                                                db.query("INSERT INTO users (nombre, apellido, cedula, correo, password_hash, rol_id, must_change_password) VALUES (?,?,?,?,?,?,?)",
+                                                    ["Super", "Administrador", "admin", "admin@bpo.com", adminHash, rRes.insertId, false]
+                                                );
+                                                console.log("Default Admin user created. (User: admin / Pass: admin123)");
+                                            }
+                                        });
+                                }
+                            });
+
+                            // Auto-migration: ensure column exists for older dbs
+                            db.query("ALTER TABLE users ADD COLUMN must_change_password BOOLEAN DEFAULT TRUE", (err) => {
+                                // Ignore error if column already exists
+                            });
+
+                            // Auto-migration M5
+                            db.query("ALTER TABLE candidates ADD COLUMN estado_final VARCHAR(50) DEFAULT 'En curso (Activo)'", () => { });
+                            db.query("ALTER TABLE candidates ADD COLUMN score_promedio DECIMAL(5,2) DEFAULT 0", () => { });
+
+                            console.log("Tables synchronized. All tables ready.");
                         });
-
-                        console.log("Tables synchronized. All tables ready.");
                     });
                 });
             });
@@ -275,19 +311,31 @@ app.get('/api/waves/:id/candidates', (req, res) => {
 // Assign a candidate to a wave
 app.put('/api/candidates/:id/assign', (req, res) => {
     const { wave_id } = req.body;
-    const query = `UPDATE candidates SET wave_id = ?, estado = 'in_training' WHERE id = ?`;
-    db.query(query, [wave_id, req.params.id], (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true });
+    db.query('SELECT estado FROM waves WHERE id = ?', [wave_id], (errW, resultsW) => {
+        if (errW) return res.status(500).json({ error: errW.message });
+        if (resultsW.length > 0 && resultsW[0].estado === 'finalizada') {
+            return res.status(403).json({ error: 'Wave cerrada: No se permiten asignaciones.' });
+        }
+        const query = `UPDATE candidates SET wave_id = ?, estado = 'in_training' WHERE id = ?`;
+        db.query(query, [wave_id, req.params.id], (err, result) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true });
+        });
     });
 });
 
 // Unassign a candidate from a wave
 app.put('/api/candidates/:id/unassign', (req, res) => {
-    const query = `UPDATE candidates SET wave_id = NULL, estado = 'selected' WHERE id = ?`;
-    db.query(query, [req.params.id], (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true });
+    db.query('SELECT w.estado FROM waves w JOIN candidates c ON w.id = c.wave_id WHERE c.id = ?', [req.params.id], (errW, resultsW) => {
+        if (errW) return res.status(500).json({ error: errW.message });
+        if (resultsW.length > 0 && resultsW[0].estado === 'finalizada') {
+            return res.status(403).json({ error: 'Wave cerrada: No se permiten desasignaciones.' });
+        }
+        const query = `UPDATE candidates SET wave_id = NULL, estado = 'selected' WHERE id = ?`;
+        db.query(query, [req.params.id], (err, result) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true });
+        });
     });
 });
 
@@ -378,6 +426,61 @@ app.post('/api/waves', (req, res) => {
     });
 });
 
+// GET checklist for a wave
+app.get('/api/waves/:id/checklist', (req, res) => {
+    const query = `SELECT * FROM wave_daily_checklists WHERE wave_id = ? ORDER BY fecha ASC`;
+    db.query(query, [req.params.id], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+// UPDATE checklist multiple rows
+app.put('/api/waves/:id/checklist', (req, res) => {
+    const { items } = req.body;
+    if (!items || !Array.isArray(items)) return res.status(400).json({ error: "Datos inválidos" });
+
+    db.query('SELECT estado FROM waves WHERE id = ?', [req.params.id], (errW, resultsW) => {
+        if (errW) return res.status(500).json({ error: errW.message });
+        if (resultsW.length > 0 && resultsW[0].estado === 'finalizada') {
+            return res.status(403).json({ error: 'Wave cerrada: No se permite alterar el checklist.' });
+        }
+
+        let queriesCompleted = 0;
+        let hasError = false;
+
+        // Fast loop for inserts/updates (Consider a bulk query or transactions for production scale)
+        items.forEach(item => {
+            if (item.id) {
+                // Update existing
+                const query = `UPDATE wave_daily_checklists SET trabajo=?, horas_trabajadas=?, ausencias=?, quiz_realizado=?, score=?, notas=?, total_dia=? WHERE id=?`;
+                db.query(query, [item.trabajo, item.horas_trabajadas, item.ausencias, item.quiz_realizado, item.score, item.notas, item.total_dia, item.id], (err) => {
+                    if (err) hasError = true;
+                    queriesCompleted++;
+                    checkDone();
+                });
+            } else {
+                // Insert new based on frontend generation (First time checklist load for a wave)
+                const query = `INSERT INTO wave_daily_checklists (wave_id, fecha, trabajo, horas_plan, horas_trabajadas, ausencias, quiz_realizado, score, notas, total_dia) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+                db.query(query, [req.params.id, item.fecha, item.trabajo, item.horas_plan, item.horas_trabajadas, item.ausencias, item.quiz_realizado, item.score, item.notas, item.total_dia], (err) => {
+                    if (err) { console.error("Error inserting checklist row:", err); hasError = true; }
+                    queriesCompleted++;
+                    checkDone();
+                });
+            }
+        });
+
+        if (items.length === 0) return res.json({ success: true });
+
+        function checkDone() {
+            if (queriesCompleted === items.length) {
+                if (hasError) return res.status(500).json({ error: "Hubo errores procesando algunos registros." });
+                res.json({ success: true });
+            }
+        }
+    });
+});
+
 // ============================================
 // API ROUTES: AUTHENTICATION & SECURITY
 // ============================================
@@ -441,7 +544,7 @@ app.post('/api/users', async (req, res) => {
 
     try {
         const hash = await bcrypt.hash(password, 10);
-        const query = `INSERT INTO users (nombre, apellido, cedula, correo, password_hash, rol_id) VALUES (?, ?, ?, ?, ?, ?)`;
+        const query = `INSERT INTO users (nombre, apellido, cedula, correo, password_hash, rol_id, must_change_password) VALUES (?, ?, ?, ?, ?, ?, TRUE)`;
 
         db.query(query, [nombre, apellido, cedula, correo, hash, rol_id], (err, result) => {
             if (err) {
@@ -452,6 +555,23 @@ app.post('/api/users', async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({ error: "Error encriptando contraseña" });
+    }
+});
+
+app.put('/api/users/change-password', async (req, res) => {
+    const { id, newPassword } = req.body;
+    if (!id || !newPassword) return res.status(400).json({ error: "Faltan datos" });
+
+    try {
+        const hash = await bcrypt.hash(newPassword, 10);
+        const query = `UPDATE users SET password_hash = ?, must_change_password = FALSE WHERE id = ?`;
+
+        db.query(query, [hash, id], (err, result) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true });
+        });
+    } catch (e) {
+        res.status(500).json({ error: "Error de servidor al encriptar" });
     }
 });
 
@@ -483,11 +603,91 @@ app.get('/api/roles', (req, res) => {
 
 app.put('/api/roles/:id', (req, res) => {
     const { permisos } = req.body;
+
+    // Security Safeguard: Prevent modifying the root Super Admin role (ID 1)
+    if (req.params.id === '1') {
+        return res.status(403).json({ error: "No se pueden modificar los permisos del Super Administrador del sistema." });
+    }
+
     const query = `UPDATE roles SET permisos = ? WHERE id = ?`;
 
     db.query(query, [JSON.stringify(permisos || []), req.params.id], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ success: true });
+    });
+});
+
+// ============================================
+// API ROUTES: M5 CIERRE Y RESULTADOS
+// ============================================
+
+// Get wave results (average score from M4 checklists + current estado_final)
+app.get('/api/waves/:id/results', (req, res) => {
+    const waveId = req.params.id;
+    // We get the participants of this wave, and their current recorded scores
+    // The query calculates the average score from the checklists dynamically
+    const query = `
+        SELECT 
+            c.id as wp_id, 
+            c.id as candidate_id, 
+            c.nombre_completo as nombre, 
+            c.documento_id as cedula,
+            c.estado_final,
+            (
+                SELECT IFNULL(AVG(wc.score), 0)
+                FROM wave_daily_checklists wc
+                WHERE wc.wave_id = ? AND wc.quiz_realizado = TRUE 
+            ) as dynamic_score
+        FROM candidates c
+        WHERE c.wave_id = ?
+    `;
+
+    db.query(query, [waveId, waveId], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+// Close a Wave and save final participant statuses
+app.put('/api/waves/:id/close', (req, res) => {
+    const waveId = req.params.id;
+    const { participantes } = req.body; // Array of { wp_id, estado_final, score_promedio }
+
+    db.beginTransaction(err => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        // Update participants
+        const updateParticipant = `UPDATE candidates SET estado_final = ?, score_promedio = ? WHERE id = ?`;
+
+        let pending = participantes.length;
+        if (pending === 0) {
+            closeWave();
+            return;
+        }
+
+        let hasError = false;
+        for (let p of participantes) {
+            db.query(updateParticipant, [p.estado_final, p.score_promedio, p.wp_id], (err2) => {
+                if (err2 && !hasError) {
+                    hasError = true;
+                    return db.rollback(() => res.status(500).json({ error: err2.message }));
+                }
+                pending--;
+                if (pending === 0 && !hasError) closeWave();
+            });
+        }
+
+        function closeWave() {
+            db.query(`UPDATE waves SET estado = 'finalizada' WHERE id = ?`, [waveId], (err3) => {
+                if (err3) {
+                    return db.rollback(() => res.status(500).json({ error: err3.message }));
+                }
+                db.commit(err4 => {
+                    if (err4) return db.rollback(() => res.status(500).json({ error: err4.message }));
+                    res.json({ success: true, message: 'Wave cerrada exitosamente' });
+                });
+            });
+        }
     });
 });
 

@@ -99,6 +99,7 @@ body {
 /* --- MAIN CONTENT --- */
 .main-content {
     flex: 1;
+    min-width: 0;
     margin-left: 260px;
     padding: 32px 40px;
     max-width: 1400px;
@@ -223,7 +224,8 @@ body {
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-control {
     width: 100%;
     padding: 10px 12px;
     background: var(--input-bg);
@@ -236,12 +238,14 @@ body {
 }
 
 .form-group input::placeholder,
-.form-group select::placeholder {
+.form-group select::placeholder,
+.form-control::placeholder {
     color: var(--text-muted);
 }
 
 .form-group input:focus,
-.form-group select:focus {
+.form-group select:focus,
+.form-control:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
 }
@@ -354,12 +358,20 @@ body {
     font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
+    white-space: nowrap;
+    display: inline-block;
 }
 
 .badge-selected {
     background: rgba(16, 185, 129, 0.2);
     color: #34d399;
     border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.badge-finished {
+    background: rgba(148, 163, 184, 0.15);
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, 0.3);
 }
 
 .badge-training {
@@ -769,4 +781,17 @@ input:checked+.slider:before {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* RESPONSIVE TABLES */
+.table-responsive {
+    overflow-x: auto;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure data tables take full width and don't force parent expansion */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
 }

@@ -31,6 +31,10 @@ const formatDate = (dateStr) => {
 
 let activeReqFilterId = null;
 
+// App Global State
+let globalActiveWaveId = null;
+let globalActiveWaveName = null;
+
 // ==========================================
 // Initialization
 // ==========================================
@@ -335,20 +339,37 @@ init();
 const navM1 = document.getElementById('nav-m1');
 const navM2 = document.getElementById('nav-m2');
 const navM3 = document.getElementById('nav-m3');
+const navM4 = document.getElementById('nav-m4');
+const navM5 = document.getElementById('nav-m5');
+const navRbac = document.getElementById('nav-rbac');
+
+// Views
 const viewM1 = document.getElementById('module-1');
 const viewM2 = document.getElementById('module-2');
 const viewM3 = document.getElementById('module-3');
+const viewM4 = document.getElementById('module-4');
+const viewM5 = document.getElementById('module-5');
+const viewRbac = document.getElementById('admin-layout');
 
 navM1.addEventListener('click', (e) => {
     e.preventDefault();
     navM2.classList.remove('active');
     if (navM3) navM3.classList.remove('active');
+    if (navM4) navM4.classList.remove('active');
+    if (navM5) navM5.classList.remove('active');
+    if (navRbac) navRbac.classList.remove('active');
     navM1.classList.add('active');
     viewM2.classList.remove('active');
     viewM3.classList.remove('active');
+    if (viewM4) viewM4.classList.remove('active');
+    if (viewM5) viewM5.classList.remove('active');
+    if (viewRbac) viewRbac.classList.remove('active');
     setTimeout(() => {
         viewM2.style.display = 'none';
         viewM3.style.display = 'none';
+        if (viewM4) viewM4.style.display = 'none';
+        if (viewM5) viewM5.style.display = 'none';
+        if (viewRbac) viewRbac.style.display = 'none';
         viewM1.style.display = 'block';
         viewM1.classList.add('active');
     }, 200);
@@ -358,12 +379,21 @@ navM2.addEventListener('click', (e) => {
     e.preventDefault();
     navM1.classList.remove('active');
     if (navM3) navM3.classList.remove('active');
+    if (navM4) navM4.classList.remove('active');
+    if (navM5) navM5.classList.remove('active');
+    if (navRbac) navRbac.classList.remove('active');
     navM2.classList.add('active');
     viewM1.classList.remove('active');
     viewM3.classList.remove('active');
+    if (viewM4) viewM4.classList.remove('active');
+    if (viewM5) viewM5.classList.remove('active');
+    if (viewRbac) viewRbac.classList.remove('active');
     setTimeout(() => {
         viewM1.style.display = 'none';
         viewM3.style.display = 'none';
+        if (viewM4) viewM4.style.display = 'none';
+        if (viewM5) viewM5.style.display = 'none';
+        if (viewRbac) viewRbac.style.display = 'none';
         viewM2.style.display = 'block';
         viewM2.classList.add('active');
     }, 200);
@@ -371,26 +401,88 @@ navM2.addEventListener('click', (e) => {
 });
 
 if (navM3) {
-    navM3.addEventListener('click', () => {
+    navM3.addEventListener('click', (e) => {
+        if (e) e.preventDefault();
         navM1.classList.remove('active');
         navM2.classList.remove('active');
+        if (navM4) navM4.classList.remove('active');
+        if (navM5) navM5.classList.remove('active');
+        if (navRbac) navRbac.classList.remove('active');
         navM3.classList.add('active');
         viewM1.classList.remove('active');
         viewM2.classList.remove('active');
-
-        // Load dropdown options just in case they added new ones
-        loadM3Dropdown();
+        if (viewM4) viewM4.classList.remove('active');
+        if (viewM5) viewM5.classList.remove('active');
+        if (viewRbac) viewRbac.classList.remove('active');
 
         setTimeout(() => {
             viewM1.style.display = 'none';
             viewM2.style.display = 'none';
+            if (viewM4) viewM4.style.display = 'none';
+            if (viewM5) viewM5.style.display = 'none';
+            if (viewRbac) viewRbac.style.display = 'none';
             viewM3.style.display = 'block';
             viewM3.classList.add('active');
         }, 200);
 
-        // We only load data if there's a current wave selected. Otherwise it shows the empty state.
-        if (currentWaveM3) {
+        if (globalActiveWaveId && (!currentWaveM3 || currentWaveM3.id !== globalActiveWaveId)) {
+            window.openModule3(globalActiveWaveId);
+        } else if (currentWaveM3) {
             loadM3Data();
+        }
+    });
+}
+
+if (navM4) {
+    navM4.addEventListener('click', (e) => {
+        if (e) e.preventDefault();
+        navM1.classList.remove('active');
+        navM2.classList.remove('active');
+        if (navM3) navM3.classList.remove('active');
+        if (navM5) navM5.classList.remove('active');
+        if (navRbac) navRbac.classList.remove('active');
+        navM4.classList.add('active');
+
+        viewM1.style.display = 'none';
+        viewM2.style.display = 'none';
+        if (viewM3) viewM3.style.display = 'none';
+        if (viewM5) viewM5.style.display = 'none';
+        if (viewRbac) viewRbac.style.display = 'none';
+        if (viewM4) {
+            viewM4.style.display = 'block';
+            viewM4.classList.add('active');
+        }
+
+        if (globalActiveWaveId && (!currentWaveM4 || currentWaveM4.id !== globalActiveWaveId)) {
+            window.openModule4(globalActiveWaveId);
+        } else if (currentWaveM4) {
+            loadM4Data();
+        }
+    });
+}
+
+if (navM5) {
+    navM5.addEventListener('click', (e) => {
+        if (e) e.preventDefault();
+        navM1.classList.remove('active');
+        navM2.classList.remove('active');
+        if (navM3) navM3.classList.remove('active');
+        if (navM4) navM4.classList.remove('active');
+        if (navRbac) navRbac.classList.remove('active');
+        navM5.classList.add('active');
+
+        viewM1.style.display = 'none';
+        viewM2.style.display = 'none';
+        if (viewM3) viewM3.style.display = 'none';
+        if (viewM4) viewM4.style.display = 'none';
+        if (viewRbac) viewRbac.style.display = 'none';
+        if (viewM5) {
+            viewM5.style.display = 'block';
+            viewM5.classList.add('active');
+        }
+
+        if (globalActiveWaveId) {
+            window.openModule5(globalActiveWaveId, globalActiveWaveName);
         }
     });
 }
@@ -421,6 +513,42 @@ async function loadModule2Data() {
     uniqueCampanas.forEach(camp => {
         selectCampana.innerHTML += `<option value="${camp}">${camp}</option>`;
     });
+
+    // Populate Formadores (Trainers) from DB
+    try {
+        const uRes = await fetch(`${API_URL}/users`);
+        if (uRes.ok) {
+            const m2Users = await uRes.json();
+            const formadorSelect = document.getElementById('w-formador');
+            const formadorCorreo = document.getElementById('w-correo-formador');
+
+            formadorSelect.innerHTML = '<option value="" disabled selected>-- Seleccione Responsable --</option>';
+
+            // Filter only to show users with the role 'Formador'
+            const formadores = m2Users.filter(u => u.nombre_rol && u.nombre_rol.toLowerCase() === 'formador');
+
+            formadores.forEach(u => {
+                const opt = document.createElement('option');
+                // We save the full name as value to align with current DB structure
+                opt.value = `${u.nombre} ${u.apellido}`;
+                opt.dataset.email = u.correo;
+                opt.textContent = `${u.nombre} ${u.apellido}`;
+                formadorSelect.appendChild(opt);
+            });
+
+            // Bind autofill email logic
+            formadorSelect.addEventListener('change', (e) => {
+                const selectedOpt = e.target.options[e.target.selectedIndex];
+                if (selectedOpt && selectedOpt.dataset.email) {
+                    formadorCorreo.value = selectedOpt.dataset.email;
+                } else {
+                    formadorCorreo.value = '';
+                }
+            });
+        }
+    } catch (e) {
+        console.error("No se pudo cargar la lista de personal para M2", e);
+    }
 
     // Fill requisitions checkbox list
     reqListContainer.innerHTML = '';
@@ -484,10 +612,11 @@ function updateWavesTable() {
                 <div>${w.cantidad_agentes} agentes</div>
                 <small style="color:var(--success); font-weight:bold;">${formatter.format(w.costo_total_proyectado)}</small>
             </td>
-            <td><span class="badge ${w.estado === 'en curso' ? 'badge-selected' : ''}">${w.estado.toUpperCase()}</span></td>
+            <td><span class="badge ${w.estado === 'en curso' ? 'badge-selected' : (w.estado === 'finalizada' ? 'badge-finished' : '')}">${w.estado.toUpperCase()}</span></td>
             <td>
-                <button class="btn-secondary" style="padding: 4px 8px; font-size:0.75rem;" onclick="openModule3(${w.id})" title="Asignar Participantes"><i class="fa-solid fa-users"></i></button>
-                <button class="btn-primary" style="padding: 4px 8px; font-size:0.75rem;" title="Ver Checklist"><i class="fa-solid fa-list-check"></i></button>
+                <button class="btn-secondary" style="padding: 4px 8px; font-size:0.75rem;" onclick="window.openModule3(${w.id})" title="Asignar Participantes"><i class="fa-solid fa-users"></i></button>
+                <button class="btn-primary" style="padding: 4px 8px; font-size:0.75rem;" onclick="window.openModule4(${w.id})" title="Ver Checklist Diario M4"><i class="fa-solid fa-list-check"></i></button>
+                <button class="btn-primary" style="padding: 4px 8px; font-size:0.75rem; background: var(--success); border-color: var(--success);" onclick="window.openModule5(${w.id}, '${w.codigo_wave}')" title="Cierre de Wave M5"><i class="fa-solid fa-flag-checkered"></i></button>
             </td>
         `;
         tableWavesBody.appendChild(tr);
@@ -585,9 +714,13 @@ async function calculateProjection() {
 
     // Auto-calculate tarifa if empty
     if (isNaN(tarifa) || tarifa <= 0) {
-        // formula: (Mensual / 30) / horas_dia
-        tarifa = (salRef / 30) / horasDia;
-        document.getElementById('w-tarifa').placeholder = `Auto-calculada: $${Math.round(tarifa)}`;
+        // En Colombia (por reducción de jornada), el promedio legal HR es 220 horas mensuales.
+        // Ejemplo: 1.750.905 / 220 = $7.958,65
+        const HORAS_MES_COLOMBIA = 220;
+        tarifa = salRef / HORAS_MES_COLOMBIA;
+
+        let tarifaVisual = Math.round(tarifa);
+        document.getElementById('w-tarifa').placeholder = `Auto (Col): $${tarifaVisual}`;
     }
 
     let currentProjectedCost = 0;
@@ -688,7 +821,7 @@ formWave.addEventListener('submit', async (e) => {
         horas_planeadas_dia: parseInt(document.getElementById('w-horas').value),
         umbral_dia_completo: parseInt(document.getElementById('w-umbral').value),
         salario_mensual_referencia: parseFloat(document.getElementById('w-salario').value),
-        tarifa_hora: parseFloat(document.getElementById('w-tarifa').value) || null,
+        tarifa_hora: parseFloat(document.getElementById('w-tarifa').value) || (parseFloat(document.getElementById('w-salario').value) / 220),
         cantidad_agentes: parseInt(document.getElementById('w-agentes').value),
 
         fecha_inicio: document.getElementById('w-fecha-inicio').value,
@@ -732,6 +865,10 @@ formWave.addEventListener('submit', async (e) => {
 // ==========================================
 // M3: PARTICIPANT ASSIGNMENT
 // ==========================================
+let currentWaveM3 = null;
+let m3AvailableCandidates = [];
+let m3AssignedCandidates = [];
+
 // DOM Elements
 const m3Title = document.getElementById('m3-wave-title');
 const m3Subtitle = document.getElementById('m3-wave-subtitle');
@@ -741,7 +878,6 @@ const m3ListAvail = document.getElementById('m3-list-available');
 const m3ListAssigned = document.getElementById('m3-list-assigned');
 const m3Search = document.getElementById('m3-search');
 const btnGoChecklist = document.getElementById('btn-go-checklist');
-const m3WaveSelector = document.getElementById('m3-wave-selector');
 
 // Navigation Button Back to M2
 const btnBackM2 = document.getElementById('btn-back-m2');
@@ -753,15 +889,24 @@ btnBackM2.addEventListener('click', () => {
     fetchWaves(); // Refresh M2 table to show new icon counts if any
 });
 
+if (btnGoChecklist) {
+    btnGoChecklist.addEventListener('click', () => {
+        if (currentWaveM3) {
+            window.openModule4(currentWaveM3.id);
+        }
+    });
+}
+
 // Entry Point from M2 Table
 window.openModule3 = async (waveId) => {
     try {
-        if (m3WaveSelector) m3WaveSelector.value = waveId;
-
         // Fetch Wave Info
         const res = await fetch(`${API_URL}/waves/${waveId}`);
         if (!res.ok) throw new Error('No se pudo cargar la wave');
         currentWaveM3 = await res.json();
+
+        globalActiveWaveId = currentWaveM3.id;
+        globalActiveWaveName = currentWaveM3.codigo_wave;
 
         // Update Header
         m3Title.textContent = `Wave: ${currentWaveM3.codigo_wave}`;
@@ -781,43 +926,16 @@ window.openModule3 = async (waveId) => {
             viewM3.classList.add('active');
         }, 200);
 
+        // Enable Checklist button
+        if (btnGoChecklist) {
+            btnGoChecklist.removeAttribute('disabled');
+        }
+
         // Load Data
         loadM3Data();
     } catch (e) {
         showToast(e.message, 'error');
     }
-}
-
-// Load dropdown for direct M3 sidebar access
-async function loadM3Dropdown() {
-    if (!m3WaveSelector) return;
-    try {
-        const res = await fetch(`${API_URL}/waves`);
-        const allWaves = await res.json();
-
-        m3WaveSelector.innerHTML = '<option value="" disabled selected>-- Selecciona de la lista --</option>';
-        allWaves.forEach(w => {
-            const opt = document.createElement('option');
-            opt.value = w.id;
-            opt.textContent = `${w.codigo_wave} - ${w.campana} (${w.estado})`;
-            m3WaveSelector.appendChild(opt);
-        });
-
-        // If one is already active, keep it selected
-        if (currentWaveM3) {
-            m3WaveSelector.value = currentWaveM3.id;
-        }
-    } catch (err) {
-        console.error("Error loading M3 dropdown");
-    }
-}
-
-if (m3WaveSelector) {
-    m3WaveSelector.addEventListener('change', (e) => {
-        if (e.target.value) {
-            window.openModule3(e.target.value);
-        }
-    });
 }
 
 // Load both lists
@@ -890,11 +1008,12 @@ function renderM3Lists(searchTerm = '') {
                     <div style="line-height: 1.2; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
                         <strong style="font-size: 1.05rem;">${c.nombre_completo}</strong><br>
                         <small style="color: var(--text-muted); font-size: 0.85rem;"><i class="fa-regular fa-envelope"></i> ${c.correo_electronico}</small>
-                    </div>
                 </div>
+                ${currentWaveM3.estado !== 'finalizada' ? `
                 <button class="btn btn-outline" style="border-color:var(--primary); color:var(--primary); padding: 5px 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0;" onclick="assignCandidateM3(${c.id})">
                     Agregar <i class="fa-solid fa-arrow-right" style="margin-left: 5px;"></i>
                 </button>
+                ` : ''}
             `;
             m3ListAvail.appendChild(div);
         });
@@ -905,15 +1024,23 @@ function renderM3Lists(searchTerm = '') {
     m3CountAssigned.textContent = `${m3AssignedCandidates.length} / ${currentWaveM3.cantidad_agentes}`;
 
     // Highlight overcapacity Warning
-    if (m3AssignedCandidates.length > currentWaveM3.cantidad_agentes) {
+    if (currentWaveM3.estado === 'finalizada') {
+        m3CountAssigned.style.background = 'var(--bg-main)';
+        m3CountAssigned.style.color = 'var(--text-muted)';
+        m3CountAssigned.style.border = '1px solid var(--border)';
+        m3CountAssigned.textContent = `🔒 Wave Cerrada (${m3AssignedCandidates.length} / ${currentWaveM3.cantidad_agentes})`;
+    } else if (m3AssignedCandidates.length > currentWaveM3.cantidad_agentes) {
         m3CountAssigned.style.background = 'var(--danger)';
         m3CountAssigned.style.color = 'white';
+        m3CountAssigned.style.border = 'none';
     } else if (m3AssignedCandidates.length === currentWaveM3.cantidad_agentes) {
         m3CountAssigned.style.background = 'var(--success)';
         m3CountAssigned.style.color = 'white';
+        m3CountAssigned.style.border = 'none';
     } else {
         m3CountAssigned.style.background = '';
         m3CountAssigned.style.color = '';
+        m3CountAssigned.style.border = '';
     }
 
     if (m3AssignedCandidates.length === 0) {
@@ -939,11 +1066,12 @@ function renderM3Lists(searchTerm = '') {
                     <div style="line-height: 1.2; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
                         <strong style="font-size: 1.05rem;">${c.nombre_completo}</strong><br>
                         <small style="color: var(--text-muted); font-size: 0.85rem;"><i class="fa-regular fa-id-card"></i> Doc: ${c.documento_id}</small>
-                    </div>
                 </div>
+                ${currentWaveM3.estado !== 'finalizada' ? `
                 <button class="btn btn-outline" style="border-color:var(--danger); color:var(--danger); padding: 5px 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0;" onclick="unassignCandidateM3(${c.id})">
                     <i class="fa-solid fa-arrow-left" style="margin-right: 5px;"></i> Remover
                 </button>
+                ` : ''}
             `;
             m3ListAssigned.appendChild(div);
         });
@@ -1007,6 +1135,489 @@ m3Search.addEventListener('input', (e) => {
 });
 
 // ==========================================
+// M4: CHECKLIST & PAYROLL
+// ==========================================
+let currentWaveM4 = null;
+let m4ChecklistData = [];
+
+// DOM Elements M4
+const m4Title = document.getElementById('m4-title');
+const m4Subtitle = document.getElementById('m4-subtitle');
+const m4BadgeHoras = document.getElementById('m4-badge-horas');
+const m4BadgeAgentes = document.getElementById('m4-badge-agentes');
+const m4BadgeTarifa = document.getElementById('m4-badge-tarifa');
+const m4BadgeDias = document.getElementById('m4-badge-dias');
+const m4FechaReporte = document.getElementById('m4-fecha-reporte');
+const btnM4SendReport = document.getElementById('btn-m4-send-report');
+const btnM4Recalc = document.getElementById('btn-m4-recalc');
+const m4KpiProyectada = document.getElementById('m4-kpi-proyectada');
+const m4ProjBase = document.getElementById('m4-proj-base');
+const m4ProjRecargos = document.getElementById('m4-proj-recargos');
+const m4KpiReal = document.getElementById('m4-kpi-real');
+const m4RealParticipants = document.getElementById('m4-real-participants');
+const m4RealDays = document.getElementById('m4-real-days');
+const m4DeviationBadge = document.getElementById('m4-deviation-badge');
+const tableM4Checklist = document.getElementById('m4-checklist-body');
+const btnM4Save = document.getElementById('btn-m4-save');
+
+window.openModule4 = async (waveId) => {
+    try {
+        const res = await fetch(`${API_URL}/waves/${waveId}`);
+        if (!res.ok) throw new Error('Error cargando wave');
+        currentWaveM4 = await res.json();
+
+        globalActiveWaveId = currentWaveM4.id;
+        globalActiveWaveName = currentWaveM4.codigo_wave;
+
+        // Navigation visual update
+        if (navM4) navM4.click();
+
+        await loadM4Data();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+};
+
+async function loadM4Data() {
+    if (!currentWaveM4) return;
+
+    // UI Header
+    m4Title.innerHTML = `Checklist de Nómina: <span style="color:white;">${currentWaveM4.codigo_wave}</span>`;
+    m4Subtitle.textContent = `${currentWaveM4.campana} • ${formatDate(currentWaveM4.fecha_inicio)} a ${formatDate(currentWaveM4.fecha_fin)}`;
+    const tarifaCalculada = parseFloat(currentWaveM4.salario_mensual_referencia) / 220;
+    const tarifaFinalUI = parseFloat(currentWaveM4.tarifa_hora) || tarifaCalculada || 0;
+
+    m4BadgeHoras.textContent = `Horas plan: ${currentWaveM4.horas_planeadas_dia}h`;
+    m4BadgeAgentes.textContent = `Agentes: ${currentWaveM4.cantidad_agentes}`;
+    m4BadgeTarifa.textContent = `Tarifa: ${formatter.format(tarifaFinalUI)}/h`;
+
+    // Set Days badge
+    const diasSeleccionados = typeof currentWaveM4.dias_laborales === 'string' ? JSON.parse(currentWaveM4.dias_laborales) : currentWaveM4.dias_laborales;
+    const dayNamesAbbr = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const diasText = diasSeleccionados.map(d => dayNamesAbbr[d]).join(', ');
+    m4BadgeDias.textContent = `Días: ${diasText}`;
+
+    // Set Report Date to today by default
+    const today = new Date();
+    today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+    m4FechaReporte.value = today.toISOString().split('T')[0];
+
+    // Projections Breakdown
+    const recargosStr = currentWaveM4.recargos;
+    const rData = typeof recargosStr === 'string' ? JSON.parse(recargosStr) : recargosStr;
+    m4KpiProyectada.textContent = formatter.format(currentWaveM4.costo_total_proyectado);
+
+    // Approximate Split for visual (In a real scenario, we'd save the precise breakdown in DB to retrieve it here)
+    m4ProjBase.textContent = "Calculado según M2";
+    m4ProjRecargos.textContent = `Mix % (${rData.domingo_pct}% dom, ${rData.festivo_pct}% fes)`;
+
+    try {
+        // Fetch actual real participants assigned in M3
+        try {
+            const pRes = await fetch(`${API_URL}/waves/${currentWaveM4.id}/participants`);
+            const participants = await pRes.json();
+            currentWaveM4.real_agentes = participants ? participants.length : currentWaveM4.cantidad_agentes;
+        } catch (err) {
+            currentWaveM4.real_agentes = currentWaveM4.cantidad_agentes; // Fallback to M2 planeado
+        }
+
+        const res = await fetch(`${API_URL}/waves/${currentWaveM4.id}/checklist`);
+        m4ChecklistData = await res.json();
+
+        if (m4ChecklistData.length === 0) {
+            // Auto-generate days
+            await generateChecklistDays();
+        } else {
+            recalculateM4Financials(); // Initial calc logic check
+            renderM4Table();
+        }
+    } catch (e) {
+        showToast("Error cargando checklist", 'error');
+    }
+}
+
+async function getHolidaysForYears(startYear, endYear) {
+    const festivos = [];
+    for (let y = startYear; y <= endYear; y++) {
+        try {
+            const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${y}/CO`);
+            if (res.ok) {
+                const data = await res.json();
+                festivos.push(...data.map(h => h.date));
+            }
+        } catch (e) {
+            console.warn(`No se pudieron obtener festivos de ${y}:`, e);
+        }
+    }
+    return festivos;
+}
+
+async function generateChecklistDays() {
+    let d = new Date(currentWaveM4.fecha_inicio);
+    const endD = new Date(currentWaveM4.fecha_fin);
+    d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
+    endD.setMinutes(endD.getMinutes() + endD.getTimezoneOffset());
+
+    const diasSeleccionados = typeof currentWaveM4.dias_laborales === 'string' ? JSON.parse(currentWaveM4.dias_laborales) : currentWaveM4.dias_laborales;
+
+    // Fetch Holidays from global cache logic already in app.js
+    const fInicio = currentWaveM4.fecha_inicio.split('T')[0];
+    const fFin = currentWaveM4.fecha_fin.split('T')[0];
+    const startYear = parseInt(fInicio.split('-')[0]);
+    const endYear = parseInt(fFin.split('-')[0]);
+    const festivosColombia = await getHolidaysForYears(startYear, endYear);
+
+    m4ChecklistData = [];
+
+    while (d <= endD) {
+        const dayOfWeek = d.getDay();
+        const dateStr = d.toISOString().split('T')[0];
+        const isFestivo = festivosColombia.includes(dateStr);
+
+        if (diasSeleccionados.includes(dayOfWeek)) {
+            // Skip festivos if the wave was created with incluir_festivos = false
+            if (isFestivo && !currentWaveM4.incluir_festivos) {
+                // Do not insert
+            } else {
+                m4ChecklistData.push({
+                    id: null,
+                    fecha: dateStr,
+                    trabajo: false,
+                    horas_plan: currentWaveM4.horas_planeadas_dia,
+                    horas_trabajadas: 0,
+                    ausencias: 0,
+                    quiz_realizado: false,
+                    score: 0,
+                    notas: '',
+                    total_dia: 0
+                });
+            }
+        }
+        d.setDate(d.getDate() + 1);
+    }
+
+    // Initial Calc
+    m4ChecklistData.forEach((row, idx) => recalculateM4RowSilent(idx));
+    recalculateM4Financials();
+    renderM4Table();
+}
+
+function recalculateM4RowSilent(index) {
+    const row = m4ChecklistData[index];
+    if (!row.trabajo) {
+        row.total_dia = 0;
+    } else {
+        const tarifaCalculada = parseFloat(currentWaveM4.salario_mensual_referencia) / 220;
+        const tarifa = parseFloat(currentWaveM4.tarifa_hora) || tarifaCalculada || 0;
+        const totalAgentes = parseInt(currentWaveM4.real_agentes !== undefined ? currentWaveM4.real_agentes : currentWaveM4.cantidad_agentes) || 0;
+
+        // Corrected Formula: Ausencias are whole absent agents, not hours.
+        // Total_Dia = (TotalAgentes - AusenciasPersonas) * HorasTrabajadas * TarifaHora
+        const horasTrab = parseFloat(row.horas_trabajadas) || 0;
+        const ausenciasPersonas = parseFloat(row.ausencias) || 0;
+
+        let costoBase = (totalAgentes - ausenciasPersonas) * horasTrab * tarifa;
+
+        // --- Added Value: Automatic Surcharges per-row logic based on date ----
+        let rData = { domingo_pct: 0, festivo_pct: 0 };
+        try { rData = typeof currentWaveM4.recargos === 'string' ? JSON.parse(currentWaveM4.recargos) : currentWaveM4.recargos || rData; } catch (e) { }
+
+        const dObj = new Date(row.fecha);
+        dObj.setMinutes(dObj.getMinutes() + dObj.getTimezoneOffset());
+        const dayOfWeek = dObj.getDay();
+
+        if (dayOfWeek === 0 && rData.domingo_pct > 0) {
+            costoBase += (costoBase * (parseFloat(rData.domingo_pct) / 100));
+        }
+
+        row.total_dia = Math.max(0, costoBase); // Prevent negative cost if absence > hours
+    }
+}
+
+function recalculateM4Row(index) {
+    recalculateM4RowSilent(index);
+    recalculateM4Financials();
+
+    // Direct DOM update to avoid focus loss and input lag
+    const row = m4ChecklistData[index];
+    const tdTotal = document.getElementById(`m4-td-total-${index}`);
+    if (tdTotal) {
+        tdTotal.textContent = formatter.format(row.total_dia);
+        tdTotal.style.color = parseFloat(row.total_dia) > 0 ? 'var(--success)' : 'var(--text-muted)';
+    }
+
+    // Toggle disabled states (Respecting the general Wave Closure Lock)
+    const inpHoras = document.getElementById(`m4-inp-horas-${index}`);
+    const inpAusencias = document.getElementById(`m4-inp-ausencias-${index}`);
+    const inpScore = document.getElementById(`m4-inp-score-${index}`);
+    const isClosed = currentWaveM4.estado === 'finalizada';
+
+    if (inpHoras) inpHoras.disabled = !row.trabajo || isClosed;
+    if (inpAusencias) inpAusencias.disabled = !row.trabajo || isClosed;
+    if (inpScore) inpScore.disabled = !row.quiz_realizado || isClosed;
+}
+
+btnM4Recalc.addEventListener('click', () => {
+    m4ChecklistData.forEach((row, idx) => recalculateM4RowSilent(idx));
+    recalculateM4Financials();
+    renderM4Table();
+    showToast('Nómina Recalculada Temporalmente', 'success');
+});
+
+function recalculateM4Financials() {
+    const totalReal = m4ChecklistData.reduce((sum, item) => sum + parseFloat(item.total_dia), 0);
+    const proyectado = parseFloat(currentWaveM4.costo_total_proyectado);
+
+    m4KpiReal.textContent = formatter.format(totalReal);
+    if (totalReal < proyectado) {
+        m4DeviationBadge.textContent = `Ahorro: ${formatter.format(proyectado - totalReal)}`;
+        m4DeviationBadge.style.background = 'var(--success)';
+        m4DeviationBadge.style.color = 'white';
+    } else {
+        m4DeviationBadge.textContent = `Sobrecosto: ${formatter.format(totalReal - proyectado)}`;
+        m4DeviationBadge.style.background = 'var(--danger)';
+        m4DeviationBadge.style.color = 'white';
+    }
+
+    m4RealDays.textContent = `${m4ChecklistData.filter(row => row.trabajo).length} activados`;
+    m4RealParticipants.textContent = currentWaveM4.real_agentes !== undefined ? currentWaveM4.real_agentes : currentWaveM4.cantidad_agentes;
+}
+
+function renderM4Table() {
+    tableM4Checklist.innerHTML = '';
+
+    // Wave Lockdown UI Logic
+    const isClosed = currentWaveM4.estado === 'finalizada';
+    if (btnM4Save) btnM4Save.style.display = isClosed ? 'none' : 'flex';
+    if (btnM4Recalc) btnM4Recalc.style.display = isClosed ? 'none' : 'flex';
+    if (btnM4SendReport) btnM4SendReport.style.display = isClosed ? 'none' : 'flex';
+
+    m4ChecklistData.forEach((row, idx) => {
+        const tr = document.createElement('tr');
+
+        const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+        const dObj = new Date(row.fecha);
+        dObj.setMinutes(dObj.getMinutes() + dObj.getTimezoneOffset());
+        const isSunday = dObj.getDay() === 0;
+
+        // MySQL returns full ISO strings for DATE columns, so we slice it to get only YYYY-MM-DD
+        const displayFecha = typeof row.fecha === 'string' ? row.fecha.split('T')[0] : row.fecha;
+
+        tr.innerHTML = `
+            <td>
+                <div style="font-weight:bold; ${isSunday ? 'color: var(--danger);' : ''}">${displayFecha}</div>
+                <div style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">${dayNames[dObj.getDay()]}</div>
+            </td>
+            <td style="text-align:center;">
+                <label class="switch" style="margin:0 auto; display:block;">
+                    <input type="checkbox" id="m4-chk-trabajo-${idx}" ${row.trabajo ? 'checked' : ''} ${isClosed ? 'disabled' : ''} onchange="updateM4Row(${idx}, 'trabajo', this.checked)">
+                    <span class="slider round"></span>
+                </label>
+            </td>
+            <td style="text-align:center;">
+                <input class="form-control text-center" style="width:60px; display:inline-block;" value="${row.horas_plan}" disabled>
+            </td>
+            <td style="text-align:center;">
+                <input type="number" id="m4-inp-horas-${idx}" class="form-control text-center highlight-input" style="width:70px; display:inline-block;" value="${row.horas_trabajadas}" ${!row.trabajo || isClosed ? 'disabled' : ''} oninput="updateM4Row(${idx}, 'horas_trabajadas', this.value)">
+            </td>
+            <td style="text-align:center;">
+                <input type="number" id="m4-inp-ausencias-${idx}" class="form-control text-center" style="width:60px; display:inline-block; border-color:${row.ausencias > 0 ? 'var(--danger)' : ''};" value="${row.ausencias}" ${!row.trabajo || isClosed ? 'disabled' : ''} oninput="updateM4Row(${idx}, 'ausencias', this.value)">
+            </td>
+            <td>
+                <input type="text" id="m4-inp-notas-${idx}" class="form-control" style="width:100%;" value="${row.notas || ''}" placeholder="Observaciones..." ${isClosed ? 'disabled' : ''} oninput="updateM4Row(${idx}, 'notas', this.value)">
+            </td>
+            <td style="text-align:center;">
+                <label class="switch" style="margin:0 auto; display:block;">
+                    <input type="checkbox" id="m4-chk-quiz-${idx}" ${row.quiz_realizado ? 'checked' : ''} ${isClosed ? 'disabled' : ''} onchange="updateM4Row(${idx}, 'quiz_realizado', this.checked)">
+                    <span class="slider round"></span>
+                </label>
+            </td>
+            <td style="text-align:center;">
+                <input type="number" id="m4-inp-score-${idx}" class="form-control text-center" style="width:70px; display:inline-block;" value="${row.score}" ${!row.quiz_realizado || isClosed ? 'disabled' : ''} oninput="updateM4Row(${idx}, 'score', this.value)">
+            </td>
+            <td id="m4-td-total-${idx}" style="text-align:right; font-weight:bold; color:${parseFloat(row.total_dia) > 0 ? 'var(--success)' : 'var(--text-muted)'}; white-space:nowrap;">
+                ${formatter.format(row.total_dia)}
+            </td>
+        `;
+        tableM4Checklist.appendChild(tr);
+    });
+}
+
+window.updateM4Row = (index, field, value) => {
+    // Sanitize input
+    if (field === 'horas_trabajadas' || field === 'ausencias' || field === 'score') {
+        value = value === '' || isNaN(value) ? 0 : parseFloat(value);
+    }
+
+    // Absence Limiter Lock
+    if (field === 'ausencias') {
+        const topAgents = currentWaveM4.real_agentes !== undefined ? currentWaveM4.real_agentes : currentWaveM4.cantidad_agentes;
+        if (value > topAgents) {
+            value = topAgents;
+            showToast(`Las ausencias no pueden superar el total de agentes matriculados (${topAgents})`, 'error');
+            const domInp = document.getElementById(`m4-inp-ausencias-${index}`);
+            if (domInp) domInp.value = value;
+        }
+    }
+
+    m4ChecklistData[index][field] = value;
+
+    // Reactively calculate and update DOM directly without full table re-render
+    recalculateM4Row(index);
+};
+
+// Removed duplicate M4 Elements declarations
+
+btnM4Save.addEventListener('click', async () => {
+    try {
+        const res = await fetch(`${API_URL}/waves/${currentWaveM4.id}/checklist`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: m4ChecklistData })
+        });
+        if (res.ok) {
+            showToast('Checklist guardado en la base de datos', 'success');
+            loadM4Data(); // reload ID mappings from DB
+        } else {
+            showToast('Error al guardar reporte', 'error');
+        }
+    } catch (e) {
+        showToast('Error de conexión con la base', 'error');
+    }
+});
+
+if (btnM4SendReport) {
+    btnM4SendReport.addEventListener('click', () => {
+        showToast(`Reporte Diario de la fecha ${m4FechaReporte.value} enviado a Administración`, 'success');
+    });
+}
+
+// ==========================================
+// M5: CIERRE Y RESULTADOS
+// ==========================================
+let m5ResultsData = [];
+
+// DOM M5 Elements
+const m5Title = document.getElementById('m5-title');
+const m5Subtitle = document.getElementById('m5-subtitle');
+const tableM5Results = document.getElementById('m5-results-body');
+const btnM5Close = document.getElementById('btn-m5-close');
+
+window.openModule5 = async (waveId, waveName) => {
+    // Rely on global state
+    globalActiveWaveId = waveId;
+    globalActiveWaveName = waveName;
+
+    if (navM5) navM5.click();
+    await loadM5Data();
+};
+
+async function loadM5Data() {
+    if (!globalActiveWaveId) return;
+
+    m5Title.innerHTML = `Cierre de Wave: <span style="color:white;">${globalActiveWaveName}</span>`;
+    m5Subtitle.textContent = "Preparación para facturación y estado final";
+
+    try {
+        const res = await fetch(`${API_URL}/waves/${globalActiveWaveId}/results`);
+        m5ResultsData = await res.json();
+
+        // Disable "Finalizar Wave" Button if it's already finished
+        const waveReq = await fetch(`${API_URL}/waves/${globalActiveWaveId}`);
+        const waveData = await waveReq.json();
+
+        if (waveData.estado === 'finalizada') {
+            if (btnM5Close) {
+                btnM5Close.style.display = 'none';
+            }
+            window.m5WaveIsClosed = true;
+        } else {
+            if (btnM5Close) {
+                btnM5Close.style.display = 'flex';
+            }
+            window.m5WaveIsClosed = false;
+        }
+
+        renderM5Table();
+    } catch (e) {
+        showToast("Error cargando resultados M5", 'error');
+    }
+}
+
+function renderM5Table() {
+    tableM5Results.innerHTML = '';
+
+    if (m5ResultsData.length === 0) {
+        tableM5Results.innerHTML = '<tr><td colspan="4" class="text-center p-4">No hay participantes en esta Wave</td></tr>';
+        return;
+    }
+
+    m5ResultsData.forEach((row, idx) => {
+        const tr = document.createElement('tr');
+
+        let selectHtml = `
+            <select class="form-control" style="background:#0f172a; color:white; width:100%; border-color:${row.estado_final.includes('Aprobado') ? 'var(--success)' : (row.estado_final !== 'En curso (Activo)' ? 'var(--danger)' : 'var(--border)')};" onchange="updateM5Row(${idx}, this.value)" ${window.m5WaveIsClosed ? 'disabled' : ''}>
+                <option value="En curso (Activo)" ${row.estado_final === 'En curso (Activo)' ? 'selected' : ''}>En curso (Activo)</option>
+                <option value="Aprobado/Contratado" ${row.estado_final === 'Aprobado/Contratado' ? 'selected' : ''}>Aprobado/Contratado</option>
+                <option value="Deserción" ${row.estado_final === 'Deserción' ? 'selected' : ''}>Deserción</option>
+                <option value="No cumple perfil" ${row.estado_final === 'No cumple perfil' ? 'selected' : ''}>No cumple perfil</option>
+                <option value="Reprobado" ${row.estado_final === 'Reprobado' ? 'selected' : ''}>Reprobado</option>
+            </select>
+        `;
+
+        tr.innerHTML = `
+            <td>
+                <div style="font-weight:bold;">${row.nombre}</div>
+                <div style="font-size:0.8rem; color:var(--text-muted);">CC: ${row.cedula}</div>
+            </td>
+            <td>${selectHtml}</td>
+            <td style="text-align:center;">
+                <input type="number" class="form-control text-center" style="width: 80px; display:inline-block; font-weight:bold; color:var(--primary);" value="${parseFloat(row.dynamic_score).toFixed(1)}" disabled>
+            </td>
+            <td style="text-align:center;">
+                <button class="btn btn-secondary btn-danger-sm" style="background:transparent; color:var(--secondary); border:none;"><i class="fa-solid fa-file-invoice-dollar"></i> Ver Pre-Nómina</button>
+            </td>
+        `;
+        tableM5Results.appendChild(tr);
+    });
+}
+
+window.updateM5Row = (idx, newState) => {
+    m5ResultsData[idx].estado_final = newState;
+};
+
+if (btnM5Close) {
+    btnM5Close.addEventListener('click', async () => {
+        if (!globalActiveWaveId) return;
+
+        if (!confirm('¿Estás SEGURO de finalizar esta Wave? Esta acción blindará los resultados y bloquea la nómina pre-aprobada.')) return;
+
+        const payload = m5ResultsData.map(r => ({
+            wp_id: r.wp_id,
+            estado_final: r.estado_final,
+            score_promedio: r.dynamic_score
+        }));
+
+        try {
+            const res = await fetch(`${API_URL}/waves/${globalActiveWaveId}/close`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ participantes: payload })
+            });
+
+            if (res.ok) {
+                showToast('Wave CERRADA exitosamente. Audit log grabado.', 'success');
+                loadM5Data();
+            } else {
+                showToast('No se pudo cerrar la Wave', 'error');
+            }
+        } catch (e) {
+            showToast('Error de conexión', 'error');
+        }
+    });
+}
+
+// ==========================================
 // AUTHENTICATION & RBAC
 // ==========================================
 const loginView = document.getElementById('login-view');
@@ -1018,7 +1629,6 @@ const loginError = document.getElementById('login-error');
 const btnLogout = document.getElementById('btn-logout');
 
 const sidebarUserName = document.getElementById('sidebar-user-name');
-const navRbac = document.getElementById('nav-rbac');
 
 // User State
 let currentUser = null;
@@ -1027,6 +1637,18 @@ function checkAuth() {
     const saved = localStorage.getItem('bpo_user');
     if (saved) {
         currentUser = JSON.parse(saved);
+
+        // Security check: Force password change on first login
+        if (currentUser.must_change_password) {
+            loginView.style.display = 'none';
+            mainLayout.style.display = 'none';
+            if (typeof adminLayout !== 'undefined' && adminLayout) adminLayout.style.display = 'none';
+
+            const modalForce = document.getElementById('modal-force-password');
+            if (modalForce) modalForce.style.display = 'flex';
+            return; // Halt execution, do not load app modules
+        }
+
         loginView.style.display = 'none';
         mainLayout.style.display = 'flex';
         applyPermissions();
@@ -1034,6 +1656,9 @@ function checkAuth() {
     } else {
         loginView.style.display = 'flex';
         mainLayout.style.display = 'none';
+
+        const modalForce = document.getElementById('modal-force-password');
+        if (modalForce) modalForce.style.display = 'none';
     }
 }
 
@@ -1074,6 +1699,56 @@ btnLogout.addEventListener('click', (e) => {
     checkAuth();
 });
 
+// Force Password Change Form Logic
+const formForcePassword = document.getElementById('form-force-password');
+if (formForcePassword) {
+    formForcePassword.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const pwd1 = document.getElementById('force-new-password').value;
+        const pwd2 = document.getElementById('force-confirm-password').value;
+
+        if (pwd1 !== pwd2) {
+            showToast('Las contraseñas no coinciden', 'warning');
+            return;
+        }
+
+        if (pwd1.length < 6) {
+            showToast('La contraseña debe tener al menos 6 caracteres', 'warning');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/users/change-password`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: currentUser.id,
+                    newPassword: pwd1
+                })
+            });
+
+            if (res.ok) {
+                showToast('Contraseña actualizada correctamente', 'success');
+                // Update local storage so we don't trip the checkAuth alarm again
+                currentUser.must_change_password = 0; // or false
+                localStorage.setItem('bpo_user', JSON.stringify(currentUser));
+
+                document.getElementById('modal-force-password').style.display = 'none';
+                document.getElementById('force-new-password').value = '';
+                document.getElementById('force-confirm-password').value = '';
+
+                // Finally, let them into the app!
+                checkAuth();
+            } else {
+                showToast('Error al actualizar contraseña', 'error');
+            }
+        } catch (err) {
+            showToast('Error de conexión', 'error');
+        }
+    });
+}
+
 function applyPermissions() {
     if (!currentUser) return;
 
@@ -1086,6 +1761,8 @@ function applyPermissions() {
     navM1.style.display = p.includes('m1_view') ? 'flex' : 'none';
     navM2.style.display = p.includes('m2_view') ? 'flex' : 'none';
     if (navM3) navM3.style.display = p.includes('m3_view') ? 'flex' : 'none';
+    if (navM4) navM4.style.display = p.includes('m4_view') ? 'flex' : 'none';
+    if (navM5) navM5.style.display = p.includes('m5_view') ? 'flex' : 'none';
     navRbac.style.display = p.includes('admin_panel') ? 'flex' : 'none';
 
     // Content Permissions
@@ -1109,6 +1786,15 @@ function applyPermissions() {
         }
     });
 
+    // M4 Edit Button Logic (Force visible if Admin to bypass cache issues)
+    if (btnM4Save) {
+        if (currentUser.rol_id === 1 || p.includes('m4_edit') || p.includes('admin_panel')) {
+            btnM4Save.style.display = 'inline-block';
+        } else {
+            btnM4Save.style.display = 'none';
+        }
+    }
+
     // Default route logic -> if user doesn't have M1 but it's active by default, switch to whatever they have
     if (!p.includes('m1_view')) {
         navM1.classList.remove('active');
@@ -1119,11 +1805,9 @@ function applyPermissions() {
             navM2.classList.add('active');
             viewM2.style.display = 'block';
             viewM2.classList.add('active');
+            loadModule2Data(); // Fixes the perpetual 'Cargando waves...' for non-M1 users
         } else if (p.includes('admin_panel')) {
-            navRbac.classList.add('active');
-            viewRbac.style.display = 'block';
-            viewRbac.classList.add('active');
-            loadRbacData();
+            navRbac.click();
         }
     }
 }
@@ -1131,35 +1815,53 @@ function applyPermissions() {
 // ==========================================
 // MÓDULO RBAC / ADMIN
 // ==========================================
-const viewRbac = document.getElementById('module-rbac');
 const formUser = document.getElementById('form-user');
 const tableUsersBody = document.getElementById('table-users-body');
 const rolesContainer = document.getElementById('roles-container');
 const uRolSelect = document.getElementById('u-rol');
+
+const adminLayout = document.getElementById('admin-layout');
+const btnBackPlatform = document.getElementById('btn-back-platform');
 
 navRbac.addEventListener('click', (e) => {
     e.preventDefault();
     navM1.classList.remove('active');
     navM2.classList.remove('active');
     if (navM3) navM3.classList.remove('active');
+    if (navM4) navM4.classList.remove('active');
     navRbac.classList.add('active');
 
-    viewM1.classList.remove('active');
-    viewM2.classList.remove('active');
-    if (viewM3) viewM3.classList.remove('active');
-    viewRbac.classList.add('active');
+    // Hide Main App Layout
+    mainLayout.style.display = 'none';
 
-    setTimeout(() => {
-        viewM1.style.display = 'none';
-        viewM2.style.display = 'none';
-        if (viewM3) viewM3.style.display = 'none';
-        viewRbac.style.display = 'block';
-    }, 200);
+    // Show new Admin Layout
+    viewRbac.style.display = 'block';
+    adminLayout.style.display = 'block';
 
     loadRbacData();
 });
 
+if (btnBackPlatform) {
+    btnBackPlatform.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Hide Admin Layout
+        adminLayout.style.display = 'none';
+        navRbac.classList.remove('active');
+
+        // Show Main App Layout
+        mainLayout.style.display = 'flex';
+
+        // Return to first available module
+        if (navM1.style.display !== 'none') {
+            navM1.click();
+        } else if (navM2.style.display !== 'none') {
+            navM2.click();
+        }
+    });
+}
+
 let systemRoles = [];
+let systemUsers = [];
 
 async function loadRbacData() {
     try {
@@ -1168,10 +1870,10 @@ async function loadRbacData() {
             fetch(`${API_URL}/roles`)
         ]);
 
-        const users = await resUsers.json();
+        systemUsers = await resUsers.json();
         systemRoles = await resRoles.json();
 
-        renderUsersTable(users);
+        renderUsersTable(systemUsers);
         renderRolesSelect();
         renderRolesMatrix();
     } catch (e) {
@@ -1183,18 +1885,52 @@ function renderUsersTable(users) {
     tableUsersBody.innerHTML = '';
     users.forEach(u => {
         const tr = document.createElement('tr');
+
+        let roleBadgeClass = 'badge-training'; // fallback
+        if (u.nombre_rol === 'Admin') roleBadgeClass = 'badge-selected';
+        if (u.nombre_rol === 'Formador') roleBadgeClass = 'badge-training';
+        if (u.nombre_rol === 'Analista') roleBadgeClass = 'badge-completed'; // Assume this class exists or it will default to a nice color
+
         tr.innerHTML = `
             <td>
-                <strong>${u.nombre} ${u.apellido}</strong><br>
-                <small class="text-muted"><i class="fa-regular fa-envelope"></i> ${u.correo}</small><br>
-                <small class="text-muted"><i class="fa-regular fa-id-card"></i> ${u.cedula}</small>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 38px; height: 38px; border-radius: 50%; background: var(--card-bg); border: 1px solid var(--border); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: bold; flex-shrink: 0;">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <div>
+                        <div class="p-name" style="font-weight: 600; color: var(--text-light);">${u.nombre} ${u.apellido}</div>
+                        <div class="p-email" style="font-size: 0.8rem; color: var(--text-muted);"><i class="fa-regular fa-envelope"></i> ${u.correo}</div>
+                        <div class="p-email" style="font-size: 0.8rem; color: var(--text-muted);"><i class="fa-regular fa-id-card"></i> ${u.cedula}</div>
+                    </div>
+                </div>
             </td>
-            <td><span class="badge badge-selected">${u.nombre_rol}</span></td>
-            <td>
-                ${u.id === 1 ? '<small class="text-muted">Protegido</small>' : `<button class="btn btn-outline" style="color:var(--danger); border-color:var(--danger);" onclick="deleteUser(${u.id})"><i class="fa-solid fa-trash"></i></button>`}
+            <td style="vertical-align: middle;"><span class="badge ${roleBadgeClass}">${u.nombre_rol}</span></td>
+            <td style="vertical-align: middle;">
+                ${u.id === 1 ? '<span class="badge badge-training" style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted);"><i class="fa-solid fa-lock"></i> Sistema</span>' : `<button class="btn-danger-sm" onclick="deleteUser(${u.id})"><i class="fa-solid fa-trash"></i> Eliminar</button>`}
             </td>
         `;
         tableUsersBody.appendChild(tr);
+    });
+}
+
+// Search Filter for Admin Users
+const adminSearchUsers = document.getElementById('admin-search-users');
+if (adminSearchUsers) {
+    adminSearchUsers.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase().trim();
+        if (!term) {
+            renderUsersTable(systemUsers);
+            return;
+        }
+
+        const filtered = systemUsers.filter(u =>
+            u.nombre.toLowerCase().includes(term) ||
+            u.apellido.toLowerCase().includes(term) ||
+            u.cedula.toLowerCase().includes(term) ||
+            u.correo.toLowerCase().includes(term) ||
+            (u.nombre_rol && u.nombre_rol.toLowerCase().includes(term))
+        );
+        renderUsersTable(filtered);
     });
 }
 
@@ -1263,7 +1999,10 @@ const availablePermissions = [
     { id: 'm2_view', label: 'M2: Ver Waves (Histórico)' },
     { id: 'm2_edit', label: 'M2: Simular / Crear Waves' },
     { id: 'm3_view', label: 'M3: Menú Asignación' },
-    { id: 'm4_view', label: 'M4: Checklist Diario' },
+    { id: 'm4_view', label: 'M4: Ver Checklist Diario' },
+    { id: 'm4_edit', label: 'M4: Editar / Guardar Nominas' },
+    { id: 'm5_view', label: 'M5: Ver Cierre de Waves (Resultados)' },
+    { id: 'm5_edit', label: 'M5: Modificar Estados y Finalizar Waves' },
     { id: 'admin_panel', label: 'Admin: Panel de Seguridad' }
 ];
 
@@ -1273,11 +2012,19 @@ function renderRolesMatrix() {
     systemRoles.forEach(rol => {
         const perms = rol.permisos || [];
 
+        // Check if this is the super admin role
+        const isAdminRole = rol.id === 1;
+
+        // VISUALLY HIDE ADMIN ROLE ENTIRELY FROM CONFIGURATION MATRIX
+        if (isAdminRole) return;
+
         let checksHTML = availablePermissions.map(ap => {
             const checked = perms.includes(ap.id) ? 'checked' : '';
+            // Disable interactions for the Admin role visually
+            const disabledAttr = isAdminRole ? 'disabled' : '';
             return `
-                <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:0.9rem; cursor:pointer;">
-                    <input type="checkbox" class="cb-perm-${rol.id}" value="${ap.id}" ${checked}>
+                <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:0.9rem; cursor:${isAdminRole ? 'not-allowed' : 'pointer'}; opacity: ${isAdminRole ? '0.7' : '1'};">
+                    <input type="checkbox" class="cb-perm-${rol.id}" value="${ap.id}" ${checked} ${disabledAttr}>
                     ${ap.label}
                 </label>
             `;
@@ -1296,9 +2043,9 @@ function renderRolesMatrix() {
             <div style="margin-bottom: 20px;">
                 ${checksHTML}
             </div>
-            <button class="btn btn-outline w-100" onclick="saveRolePermissions(${rol.id}, '${rol.nombre_rol}')">
+            ${isAdminRole ? '<div class="text-muted text-sm text-center">🔐 Rol del Sistema Protegido</div>' : `<button class="btn btn-outline w-100" onclick="saveRolePermissions(${rol.id}, '${rol.nombre_rol}')">
                 <i class="fa-solid fa-floppy-disk"></i> Guardar Permisos
-            </button>
+            </button>`}
         `;
 
         rolesContainer.appendChild(card);

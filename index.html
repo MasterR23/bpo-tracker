@@ -16,7 +16,7 @@
         <div class="login-card">
             <div class="login-header">
                 <i class="fa-solid fa-shield-halved"></i>
-                <h2>BPO Tracker</h2>
+                <h2>BPO Global Services</h2>
                 <p>Acceso Restringido</p>
             </div>
             <form id="form-login" class="login-form">
@@ -56,6 +56,18 @@
                 <a href="#" class="nav-item" id="nav-m3">
                     <i class="fa-solid fa-people-group"></i>
                     Asignación (M3)
+                </a>
+                <a href="#" class="nav-item" id="nav-m4" style="display: none;">
+                    <i class="fa-solid fa-list-check"></i>
+                    Checklist (M4)
+                </a>
+                <a href="#" class="nav-item" id="nav-m5" style="display: none;">
+                    <i class="fa-solid fa-flag-checkered"></i>
+                    Cierre (M5)
+                </a>
+                <a href="#" class="nav-item" id="nav-m5" style="display: none;">
+                    <i class="fa-solid fa-flag-checkered"></i>
+                    Cierre (M5)
                 </a>
 
                 <div style="margin: 20px 0 10px 0; border-top: 1px solid var(--border); width: 100%;"></div>
@@ -290,11 +302,14 @@
                                             </div>
                                             <div class="form-group">
                                                 <label>Formador Responsable</label>
-                                                <input type="text" id="w-formador" required>
+                                                <select id="w-formador" required>
+                                                    <option value="" disabled selected>Cargando personal...</option>
+                                                </select>
                                             </div>
                                             <div class="form-group">
                                                 <label>Correo Responsable</label>
-                                                <input type="email" id="w-correo-formador" required>
+                                                <input type="email" id="w-correo-formador"
+                                                    placeholder="Se autocompleta..." readonly required>
                                             </div>
                                             <div class="form-group">
                                                 <label>Correo Área Encargada</label>
@@ -475,11 +490,7 @@
                     style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px;">
                     <div>
                         <div style="display:flex; align-items:center; gap: 15px;">
-                            <h1 id="m3-wave-title" style="display:none;">Wave: </h1>
-                            <select id="m3-wave-selector" class="form-control"
-                                style="font-size: 1.5rem; font-weight: bold; background: transparent; border: 1px solid var(--border); color: white; padding: 5px 10px; border-radius: 8px; max-width: 400px;">
-                                <option value="" disabled selected>-- Selecciona una Wave --</option>
-                            </select>
+                            <h1 id="m3-wave-title">Wave: </h1>
                         </div>
                         <p class="subtitle mt-2" id="m3-wave-subtitle">Campaña: - | Formador: -</p>
                     </div>
@@ -530,102 +541,340 @@
                 </div>
             </div> <!-- End Module 3 -->
 
-            <!-- ===================== MÓDULO RBAC / ADMIN ===================== -->
-            <div id="module-rbac" class="module-view" style="display: none;">
-                <header class="page-header">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%;">
-                        <div>
-                            <h1>Gestión de Seguridad (RBAC)</h1>
-                            <p class="subtitle mt-2">Administración de Usuarios y Permisos Globales</p>
+            <!-- ===================== MÓDULO 4: CHECKLIST Y NÓMINA ===================== -->
+            <div id="module-4" class="module-view" style="display: none;">
+                <!-- Complex Header -->
+                <header class="page-header"
+                    style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px; border-bottom: 2px solid var(--border); padding-bottom: 20px; margin-bottom: 20px;">
+                    <div style="flex: 1; min-width: 300px;">
+                        <h1 id="m4-title">Checklist de Nómina: <span class="text-muted">SELECCIONE WAVE</span></h1>
+                        <p class="subtitle" id="m4-subtitle" style="margin-bottom: 10px;">Campaña • Rango de Fechas</p>
+                        <div id="m4-badges-container" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <span class="badge" id="m4-badge-horas">Horas plan: -</span>
+                            <span class="badge" id="m4-badge-agentes">Agentes: -</span>
+                            <span class="badge badge-selected" id="m4-badge-tarifa">Tarifa: -</span>
+                            <span class="badge" id="m4-badge-dias"
+                                style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">Días:
+                                -</span>
                         </div>
+                    </div>
+                    <div
+                        style="display: flex; flex-direction: column; gap: 10px; align-items: flex-end; min-width: 250px;">
+                        <div style="width: 100%;">
+                            <label
+                                style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 5px;">Fecha
+                                Reporte</label>
+                            <input type="date" id="m4-fecha-reporte" class="form-control"
+                                style="width: 100%; background: rgba(255,255,255,0.05); color: white; border-color: rgba(255,255,255,0.1);">
+                        </div>
+                        <button class="btn btn-outline" id="btn-m4-recalc"
+                            data-tooltip="Útil si cambian los recargos globales"
+                            style="width: 100%; justify-content: center;">
+                            Recalcular Nómina
+                        </button>
+                        <button class="btn btn-primary" id="btn-m4-send-report"
+                            style="width: 100%; justify-content: center; background: #6366f1; border-color: #6366f1;">
+                            Enviar Reporte Diario
+                        </button>
                     </div>
                 </header>
 
+                <!-- Financial KPIs -->
+                <section class="kpi-section grid-2-col" style="margin-bottom: 25px;">
+                    <!-- Proyectada -->
+                    <div class="kpi-card" style="border: 1px solid var(--border);">
+                        <div class="kpi-icon neutral"><i class="fa-solid fa-chart-line"></i></div>
+                        <div class="kpi-data" style="width: 100%;">
+                            <p class="kpi-title">Nómina Proyectada (Total Wave)</p>
+                            <h3 class="kpi-value highlight" id="m4-kpi-proyectada" style="font-size: 2rem;">$0</h3>
+                            <div
+                                style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px;">
+                                <span>Base: <b id="m4-proj-base">$0</b></span>
+                                <span>Recargos: <b id="m4-proj-recargos">$0</b></span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Real Dinámica -->
+                    <div class="kpi-card"
+                        style="border: 2px solid var(--success); background: rgba(16, 185, 129, 0.05); position: relative;">
+                        <!-- Deviation Badge -->
+                        <div id="m4-deviation-badge"
+                            style="position: absolute; top: -12px; right: 20px; background: var(--success); color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                            Ahorro: $0
+                        </div>
+
+                        <div class="kpi-icon secondary"><i class="fa-solid fa-sack-dollar"></i></div>
+                        <div class="kpi-data" style="width: 100%;">
+                            <p class="kpi-title" style="color: var(--success); font-weight: bold;">Nómina Real en Vivo
+                            </p>
+                            <h3 class="kpi-value highlight" id="m4-kpi-real"
+                                style="font-size: 2.2rem; color: var(--success);">$0</h3>
+                            <div
+                                style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); margin-top: 10px; border-top: 1px solid rgba(16, 185, 129, 0.2); padding-top: 10px;">
+                                <span>Participantes Reales: <b id="m4-real-participants">0</b></span>
+                                <span>Días Check: <b id="m4-real-days">0</b></span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Daily Checklist Matrix -->
+                <div class="card table-card">
+                    <div class="card-header"
+                        style="display: flex; justify-content: space-between; align-items: flex-start; padding: 25px; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border);">
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
+                                Checklist Diario</h3>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px; margin-bottom: 0;">
+                                Edite cada día;
+                                los totales se actualizan al instante.</p>
+                        </div>
+                        <button class="btn btn-primary" id="btn-m4-save"
+                            style="background: #6366f1; border-color: #6366f1; border-radius: 20px; font-weight: 500; font-size: 0.85rem; padding: 6px 16px;">
+                            Guardar Checklist
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-m4-checklist">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th style="text-align:center;">Trabajó</th>
+                                    <th style="text-align:center;">Hrs Plan</th>
+                                    <th style="text-align:center;">Hrs Reales</th>
+                                    <th style="text-align:center;">Ausencias</th>
+                                    <th style="width: 20%;">Notas / Justificación</th>
+                                    <th style="text-align:center;">Quiz</th>
+                                    <th style="text-align:center;">Prom. Score</th>
+                                    <th style="text-align:right; white-space:nowrap; width:120px;">TOTAL DÍA</th>
+                                </tr>
+                            </thead>
+                            <tbody id="m4-checklist-body">
+                                <tr>
+                                    <td colspan="9" class="text-center p-4">Busca tu Wave en el Módulo 2 y haz clic en
+                                        "Ver Checklist" para cargar los días.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div> <!-- End Module 4 -->
+
+            <!-- ===================== MÓDULO 5: CIERRE Y RESULTADOS ===================== -->
+            <div id="module-5" class="module-view" style="display: none;">
+                <header class="page-header"
+                    style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px; border-bottom: 2px solid var(--border); padding-bottom: 20px; margin-bottom: 20px;">
+                    <div style="flex: 1; min-width: 300px;">
+                        <h1 id="m5-title">Cierre de Wave: <span class="text-muted">SELECCIONE WAVE</span></h1>
+                        <p class="subtitle" id="m5-subtitle" style="margin-bottom: 10px;">Revisión fina de Resultados
+                        </p>
+                    </div>
+                    <div
+                        style="display: flex; flex-direction: column; gap: 10px; align-items: flex-end; min-width: 250px;">
+                        <button class="btn btn-outline" id="btn-m5-cobro"
+                            style="width: 100%; justify-content: center; border-color: rgba(255,255,255,0.2); color: white; background: rgba(255,255,255,0.05);">
+                            <i class="fa-solid fa-file-invoice-dollar"></i> Generar Cuenta de Cobro (Demo)
+                        </button>
+                        <button class="btn btn-primary" id="btn-m5-close"
+                            style="width: 100%; justify-content: center; background: var(--success); border-color: var(--success);">
+                            <i class="fa-solid fa-flag-checkered"></i> Finalizar Wave y Cerrar
+                        </button>
+                    </div>
+                </header>
+
+                <div class="card table-card">
+                    <div class="card-header"
+                        style="display: flex; justify-content: space-between; align-items: flex-start; padding: 25px; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border);">
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
+                                Resultados y Promedios Históricos</h3>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px; margin-bottom: 0;">
+                                Valide el estado de aprobación antes de facturar.</p>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="table-m5-results" style="table-layout: fixed; width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th style="width: 35%;">Candidato</th>
+                                    <th style="width: 20%; text-align:center;">Estado Final</th>
+                                    <th style="width: 15%; text-align:center;">Score Histórico Prom.</th>
+                                    <th style="width: 25%; text-align:center;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="m5-results-body">
+                                <tr>
+                                    <td colspan="4" class="text-center p-4">Seleccione una Wave para ver los resultados
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div> <!-- End Module 5 -->
+
+            <!-- Extracted RBAC Module -->
+        </main>
+    </div>
+
+    <!-- ===================== MÓDULO RBAC / ADMIN (STANDALONE LAYOUT) ===================== -->
+    <div id="admin-layout"
+        style="display: none; min-height: 100vh; background: #0f172a; padding: 40px 20px; font-family: 'Inter', sans-serif;">
+        <div style="max-width: 1200px; margin: 0 auto; width: 100%;">
+            <header
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px;">
+                <div>
+                    <h1 style="color: white; font-size: 1.8rem; margin: 0;"><i class="fa-solid fa-shield-halved"
+                            style="color: var(--primary);"></i> Centro de Mando Corporativo</h1>
+                    <p style="color: #94a3b8; font-size: 0.95rem; margin-top: 5px;">Administración Central de Usuarios,
+                        Accesos y Seguridad del Sistema</p>
+                </div>
+                <button id="btn-back-platform" class="btn btn-outline"
+                    style="border-color: rgba(255,255,255,0.2); color: white; background: rgba(255,255,255,0.05);">
+                    <i class="fa-solid fa-arrow-left"></i> Volver a la Plataforma Operativa
+                </button>
+            </header>
+
+            <div id="module-rbac" style="display: block;">
+                <!-- Inner content without the old page-header since we have a new one above -->
                 <div class="grid-2-col mt-4">
                     <!-- Left: Users Form -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Crear Nuevo Usuario</h3>
+                    <div class="card" style="background: rgba(30, 41, 59, 0.7); border-color: rgba(255,255,255,0.05);">
+                        <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <h3 style="color: #e2e8f0;">Crear Nuevo Usuario</h3>
                         </div>
                         <div class="card-body">
                             <form id="form-user" class="form-grid">
                                 <div class="form-group">
-                                    <label>Nombres</label>
-                                    <input type="text" id="u-nombre" class="form-control" required>
+                                    <label style="color: #cbd5e1;">Nombres</label>
+                                    <input type="text" id="u-nombre" class="form-control"
+                                        style="background: #0f172a; border-color: rgba(255,255,255,0.1); color: white;"
+                                        required>
                                 </div>
                                 <div class="form-group">
-                                    <label>Apellidos</label>
-                                    <input type="text" id="u-apellido" class="form-control" required>
+                                    <label style="color: #cbd5e1;">Apellidos</label>
+                                    <input type="text" id="u-apellido" class="form-control"
+                                        style="background: #0f172a; border-color: rgba(255,255,255,0.1); color: white;"
+                                        required>
                                 </div>
                                 <div class="form-group">
-                                    <label>Cédula (Usuario)</label>
-                                    <input type="text" id="u-cedula" class="form-control" required>
+                                    <label style="color: #cbd5e1;">Cédula (Usuario)</label>
+                                    <input type="text" id="u-cedula" class="form-control"
+                                        style="background: #0f172a; border-color: rgba(255,255,255,0.1); color: white;"
+                                        required>
                                 </div>
                                 <div class="form-group">
-                                    <label>Correo Electrónico</label>
-                                    <input type="email" id="u-correo" class="form-control" required>
+                                    <label style="color: #cbd5e1;">Correo Electrónico</label>
+                                    <input type="email" id="u-correo" class="form-control"
+                                        style="background: #0f172a; border-color: rgba(255,255,255,0.1); color: white;"
+                                        required>
                                 </div>
                                 <div class="form-group">
-                                    <label>Contraseña Temporal</label>
-                                    <input type="password" id="u-password" class="form-control" required>
+                                    <label style="color: #cbd5e1;">Contraseña Temporal</label>
+                                    <input type="password" id="u-password" class="form-control"
+                                        style="background: #0f172a; border-color: rgba(255,255,255,0.1); color: white;"
+                                        required>
                                 </div>
                                 <div class="form-group">
-                                    <label>Rol del Sistema</label>
-                                    <select id="u-rol" class="form-control" required>
+                                    <label style="color: #cbd5e1;">Rol del Sistema</label>
+                                    <select id="u-rol" class="form-control"
+                                        style="background: #0f172a; border-color: rgba(255,255,255,0.1); color: white;"
+                                        required>
                                         <option value="" disabled selected>-- Seleccione un Rol --</option>
                                     </select>
                                 </div>
-                                <div class="form-group" style="grid-column: 1 / -1;">
-                                    <button type="submit" class="btn btn-primary w-100"><i
-                                            class="fa-solid fa-user-plus"></i> Guardar Usuario</button>
+                                <div class="form-group" style="grid-column: 1 / -1; margin-top: 10px;">
+                                    <button type="submit" class="btn btn-primary w-100" style="padding: 12px;"><i
+                                            class="fa-solid fa-user-plus"></i> Guardar y Autorizar Usuario</button>
                                 </div>
                             </form>
                         </div>
                     </div>
 
                     <!-- Right: Existing Users List -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Directorio Activo</h3>
-                        </div>
-                        <div class="card-body" style="padding: 0;">
-                            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Usuario</th>
-                                            <th>Rol</th>
-                                            <th>Acción</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="table-users-body">
-                                        <!-- JS Users Here -->
-                                    </tbody>
-                                </table>
+                    <div class="card" style="background: rgba(30, 41, 59, 0.7); border-color: rgba(255,255,255,0.05);">
+                        <div class="card-header"
+                            style="border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="color: #e2e8f0; margin: 0;">Directorio Activo (Personal Autorizado)</h3>
+                            <div style="flex-shrink: 0; width: 250px;">
+                                <input type="text" id="admin-search-users" class="form-control"
+                                    placeholder="🔍 Buscar usuario..."
+                                    style="background: #0f172a; border-color: rgba(255,255,255,0.2); color: white; border-radius: 20px; padding: 6px 15px;">
                             </div>
+                        </div>
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <!-- Adding a custom CSS class specifically for dark tables if needed, or inline overrides -->
+                            <table class="data-table" id="admin-users-table" style="color: #e2e8f0;">
+                                <thead>
+                                    <tr>
+                                        <th
+                                            style="background: rgba(255,255,255,0.02); color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                            Usuario</th>
+                                        <th
+                                            style="background: rgba(255,255,255,0.02); color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                            Rol</th>
+                                        <th
+                                            style="background: rgba(255,255,255,0.02); color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                            Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-users-body">
+                                    <!-- JS Users Here -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
 
                 <!-- Bottom Config: Roles & Permissions -->
                 <div class="card mt-4 mb-4"
-                    style="border: 1px solid var(--primary); background: rgba(37, 99, 235, 0.03);">
-                    <div class="card-header">
+                    style="border: 1px solid rgba(59, 130, 246, 0.5); background: rgba(15, 23, 42, 0.8);">
+                    <div class="card-header" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                         <h3 style="color: var(--primary);"><i class="fa-solid fa-unlock-keyhole"></i> Matrices de
-                            Permisos por Rol</h3>
+                            Permisos Críticos por Rol</h3>
                     </div>
                     <div class="card-body">
-                        <p class="text-muted text-sm mb-4">Selecciona qué módulos puede ver y editar cada perfil. Los
-                            cambios aplican inmediatamente al próximo inicio de sesión del usuario.</p>
+                        <p style="color: #94a3b8; margin-bottom: 20px; font-size: 0.95rem;">Selecciona detalladamente
+                            los módulos que puede ver u operar cada perfil del sistema. Esta matriz tiene efecto
+                            inmediato en los tokens de sesión.</p>
 
                         <div class="grid-3-col" id="roles-container">
                             <!-- JS Roles Cards Here -->
                         </div>
                     </div>
                 </div>
-            </div> <!-- End Module RBAC -->
 
-        </main>
+            </div> <!-- End Module RBAC inner content -->
+        </div> <!-- End Max-Width Wrapper -->
+    </div> <!-- End Admin Layout -->
+
+
+    <!-- ===================== MODAL: FORCED PASSWORD CHANGE ===================== -->
+    <div id="modal-force-password"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.95); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+        <div
+            style="background: #1e293b; padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+            <div style="text-align: center; margin-bottom: 25px;">
+                <i class="fa-solid fa-lock" style="font-size: 3rem; color: #f59e0b; margin-bottom: 15px;"></i>
+                <h3 style="color: white; margin: 0; font-size: 1.5rem;">Actualiza tu Contraseña</h3>
+                <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 10px;">Por seguridad, debes establecer una
+                    contraseña privada antes de poder acceder al sistema corporativo.</p>
+            </div>
+            <form id="form-force-password">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="color: #cbd5e1; font-size: 0.9rem;">Nueva Contraseña</label>
+                    <input type="password" id="force-new-password" class="form-control"
+                        style="background: #0f172a; border-color: rgba(255,255,255,0.1); color: white;" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 25px;">
+                    <label style="color: #cbd5e1; font-size: 0.9rem;">Confirmar Contraseña</label>
+                    <input type="password" id="force-confirm-password" class="form-control"
+                        style="background: #0f172a; border-color: rgba(255,255,255,0.1); color: white;" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100" style="padding: 12px; font-weight: bold;"><i
+                        class="fa-solid fa-key"></i> Guardar y Continuar</button>
+            </form>
+        </div>
     </div>
 
     <!-- Tostadas para notificaciones -->
