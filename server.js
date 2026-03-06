@@ -3,6 +3,19 @@ const mysql = require('mysql2');
 const cors = require('cors');
 const path = require('path');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
+
+// Rate limiter - Defensa Fuerza Bruta
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: { error: "Demasiados intentos de inicio de sesión. Por favor, inténtalo de nuevo después de 15 minutos." },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+const JWT_SECRET = process.env.JWT_SECRET || 'bpo-tracker-super-secret-key-2026';
 
 const app = express();
 const PORT = 3000;
@@ -215,7 +228,7 @@ function createTables() {
 // ============================================
 
 // Get all requisitions with their "ocupados" count
-app.get('/api/requisitions', (req, res) => {
+app.get('/api/requisitions', verifyToken, (req, res) => {
     const query = `
         SELECT r.*, 
                (SELECT COUNT(*) FROM candidates c WHERE c.requisicion_id = r.id) as ocupados
@@ -230,7 +243,7 @@ app.get('/api/requisitions', (req, res) => {
 });
 
 // Create new requisition
-app.post('/api/requisitions', (req, res) => {
+app.post('/api/requisitions', verifyToken, requireCoordinator, (req, res) => {
     const { campana, perfil_cargo, salario, cupos, fecha_ingreso } = req.body;
 
     const query = `INSERT INTO requisitions (campana, perfil_cargo, salario, cupos, fecha_ingreso) VALUES (?, ?, ?, ?, ?)`;
@@ -241,7 +254,7 @@ app.post('/api/requisitions', (req, res) => {
 });
 
 // Delete a requisition (Soft-ish/Hard) -> Only allows if no candidates attached (ON DELETE RESTRICT is set)
-app.delete('/api/requisitions/:id', (req, res) => {
+app.delete('/api/requisitions/:id', verifyToken, requireAdmin, (req, res) => {
     const reqId = req.params.id;
     const query = `DELETE FROM requisitions WHERE id = ?`;
 
@@ -262,7 +275,7 @@ app.delete('/api/requisitions/:id', (req, res) => {
 // ============================================
 
 // Get all candidates with their associated requisition
-app.get('/api/candidates', (req, res) => {
+app.get('/api/candidates', verifyToken, (req, res) => {
     const query = `
         SELECT c.*, r.campana, r.perfil_cargo 
         FROM candidates c
@@ -277,7 +290,7 @@ app.get('/api/candidates', (req, res) => {
 });
 
 // Get available candidates (no wave assigned)
-app.get('/api/candidates/available', (req, res) => {
+app.get('/api/candidates/available', verifyToken, (req, res) => {
     const query = `
         SELECT c.*, r.campana, r.perfil_cargo 
         FROM candidates c
@@ -293,7 +306,7 @@ app.get('/api/candidates/available', (req, res) => {
 });
 
 // Get candidates assigned to a specific wave
-app.get('/api/waves/:id/candidates', (req, res) => {
+app.get('/api/waves/:id/candidates', verifyToken, (req, res) => {
     const query = `
         SELECT c.*, r.campana, r.perfil_cargo 
         FROM candidates c
@@ -309,7 +322,7 @@ app.get('/api/waves/:id/candidates', (req, res) => {
 });
 
 // Assign a candidate to a wave
-app.put('/api/candidates/:id/assign', (req, res) => {
+app.put('/api/candidates/:id/assign', verifyToken, (req, res) => {
     const { wave_id } = req.body;
     db.query('SELECT estado FROM waves WHERE id = ?', [wave_id], (errW, resultsW) => {
         if (errW) return res.status(500).json({ error: errW.message });
@@ -325,7 +338,7 @@ app.put('/api/candidates/:id/assign', (req, res) => {
 });
 
 // Unassign a candidate from a wave
-app.put('/api/candidates/:id/unassign', (req, res) => {
+app.put('/api/candidates/:id/unassign', verifyToken, (req, res) => {
     db.query('SELECT w.estado FROM waves w JOIN candidates c ON w.id = c.wave_id WHERE c.id = ?', [req.params.id], (errW, resultsW) => {
         if (errW) return res.status(500).json({ error: errW.message });
         if (resultsW.length > 0 && resultsW[0].estado === 'finalizada') {
@@ -340,7 +353,7 @@ app.put('/api/candidates/:id/unassign', (req, res) => {
 });
 
 // Create new candidate
-app.post('/api/candidates', (req, res) => {
+app.post('/api/candidates', verifyToken, requireCoordinator, (req, res) => {
     const { nombre_completo, documento_id, correo_electronico, requisicion_id } = req.body;
 
     // Check if requisition has spots available before inserting
@@ -368,7 +381,7 @@ app.post('/api/candidates', (req, res) => {
 });
 
 // Delete a candidate
-app.delete('/api/candidates/:id', (req, res) => {
+app.delete('/api/candidates/:id', verifyToken, requireCoordinator, (req, res) => {
     const query = `DELETE FROM candidates WHERE id = ?`;
     db.query(query, [req.params.id], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -380,7 +393,7 @@ app.delete('/api/candidates/:id', (req, res) => {
 // API ROUTES: WAVES
 // ============================================
 
-app.get('/api/waves', (req, res) => {
+app.get('/api/waves', verifyToken, (req, res) => {
     const query = `SELECT * FROM waves ORDER BY created_at DESC`;
     db.query(query, (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -389,7 +402,7 @@ app.get('/api/waves', (req, res) => {
 });
 
 // Get a single wave by ID
-app.get('/api/waves/:id', (req, res) => {
+app.get('/api/waves/:id', verifyToken, (req, res) => {
     const query = `SELECT * FROM waves WHERE id = ?`;
     db.query(query, [req.params.id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -398,7 +411,7 @@ app.get('/api/waves/:id', (req, res) => {
     });
 });
 
-app.post('/api/waves', (req, res) => {
+app.post('/api/waves', verifyToken, (req, res) => {
     const data = req.body;
 
     const query = `
@@ -427,7 +440,7 @@ app.post('/api/waves', (req, res) => {
 });
 
 // GET checklist for a wave
-app.get('/api/waves/:id/checklist', (req, res) => {
+app.get('/api/waves/:id/checklist', verifyToken, (req, res) => {
     const query = `SELECT * FROM wave_daily_checklists WHERE wave_id = ? ORDER BY fecha ASC`;
     db.query(query, [req.params.id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -436,7 +449,7 @@ app.get('/api/waves/:id/checklist', (req, res) => {
 });
 
 // UPDATE checklist multiple rows
-app.put('/api/waves/:id/checklist', (req, res) => {
+app.put('/api/waves/:id/checklist', verifyToken, requireCoordinator, (req, res) => {
     const { items } = req.body;
     if (!items || !Array.isArray(items)) return res.status(400).json({ error: "Datos inválidos" });
 
@@ -485,7 +498,36 @@ app.put('/api/waves/:id/checklist', (req, res) => {
 // API ROUTES: AUTHENTICATION & SECURITY
 // ============================================
 
-app.post('/api/login', (req, res) => {
+// Middleware para proteger rutas con JWT
+function verifyToken(req, res, next) {
+    const bearerHeader = req.headers['authorization'];
+    if (typeof bearerHeader !== 'undefined') {
+        const bearer = bearerHeader.split(' ');
+        const bearerToken = bearer[1];
+        jwt.verify(bearerToken, JWT_SECRET, (err, decoded) => {
+            if (err) {
+                return res.status(403).json({ error: "Token inválido o expirado" });
+            }
+            req.user = decoded;
+            next();
+        });
+    } else {
+        res.status(401).json({ error: "Acceso denegado. Se requiere Token de Autenticación." });
+    }
+}
+
+// Middlewares de Nivel Jerárquico (Roles: 1=Admin, 4=Coordinador)
+function requireAdmin(req, res, next) {
+    if (req.user && req.user.rol_id === 1) next();
+    else res.status(403).json({ error: "Acceso denegado: Se requieren permisos de Administrador" });
+}
+
+function requireCoordinator(req, res, next) {
+    if (req.user && (req.user.rol_id === 1 || req.user.rol_id === 4)) next();
+    else res.status(403).json({ error: "Acceso denegado: Se requieren permisos de Coordinador o superior" });
+}
+
+app.post('/api/login', loginLimiter, (req, res) => {
     const { cedula, password } = req.body;
 
     if (!cedula || !password) {
@@ -517,12 +559,19 @@ app.post('/api/login', (req, res) => {
             user.permisos = JSON.parse(user.permisos);
         } catch (e) { user.permisos = []; }
 
-        res.json({ success: true, user });
+        // Generate JWT Token
+        const token = jwt.sign(
+            { id: user.id, rol_id: user.rol_id, nombre: user.nombre },
+            JWT_SECRET,
+            { expiresIn: '12h' }
+        );
+
+        res.json({ success: true, user, token });
     });
 });
 
 // --- USERS CRUD ---
-app.get('/api/users', (req, res) => {
+app.get('/api/users', verifyToken, requireAdmin, (req, res) => {
     const query = `
         SELECT u.id, u.nombre, u.apellido, u.cedula, u.correo, u.created_at, r.nombre_rol 
         FROM users u 
@@ -535,7 +584,7 @@ app.get('/api/users', (req, res) => {
     });
 });
 
-app.post('/api/users', async (req, res) => {
+app.post('/api/users', verifyToken, requireAdmin, async (req, res) => {
     const { nombre, apellido, cedula, correo, password, rol_id } = req.body;
 
     if (!nombre || !apellido || !cedula || !correo || !password || !rol_id) {
@@ -558,7 +607,7 @@ app.post('/api/users', async (req, res) => {
     }
 });
 
-app.put('/api/users/change-password', async (req, res) => {
+app.put('/api/users/change-password', verifyToken, async (req, res) => {
     const { id, newPassword } = req.body;
     if (!id || !newPassword) return res.status(400).json({ error: "Faltan datos" });
 
@@ -575,7 +624,7 @@ app.put('/api/users/change-password', async (req, res) => {
     }
 });
 
-app.delete('/api/users/:id', (req, res) => {
+app.delete('/api/users/:id', verifyToken, requireAdmin, (req, res) => {
     // Prevent deleting the very first admin just to be safe
     if (req.params.id === '1') return res.status(403).json({ error: "No puedes eliminar al Super Administrador principal" });
 
@@ -587,7 +636,7 @@ app.delete('/api/users/:id', (req, res) => {
 });
 
 // --- ROLES CRUD ---
-app.get('/api/roles', (req, res) => {
+app.get('/api/roles', verifyToken, requireAdmin, (req, res) => {
     const query = `SELECT * FROM roles ORDER BY id ASC`;
     db.query(query, (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -601,7 +650,7 @@ app.get('/api/roles', (req, res) => {
     });
 });
 
-app.put('/api/roles/:id', (req, res) => {
+app.put('/api/roles/:id', verifyToken, requireAdmin, (req, res) => {
     const { permisos } = req.body;
 
     // Security Safeguard: Prevent modifying the root Super Admin role (ID 1)
@@ -622,7 +671,7 @@ app.put('/api/roles/:id', (req, res) => {
 // ============================================
 
 // Get wave results (average score from M4 checklists + current estado_final)
-app.get('/api/waves/:id/results', (req, res) => {
+app.get('/api/waves/:id/results', verifyToken, (req, res) => {
     const waveId = req.params.id;
     // We get the participants of this wave, and their current recorded scores
     // The query calculates the average score from the checklists dynamically
@@ -649,7 +698,7 @@ app.get('/api/waves/:id/results', (req, res) => {
 });
 
 // Close a Wave and save final participant statuses
-app.put('/api/waves/:id/close', (req, res) => {
+app.put('/api/waves/:id/close', verifyToken, requireCoordinator, (req, res) => {
     const waveId = req.params.id;
     const { participantes } = req.body; // Array of { wp_id, estado_final, score_promedio }
 

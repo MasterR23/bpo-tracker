@@ -47,24 +47,30 @@ async function init() {
 // Data Fetching
 // ==========================================
 async function fetchRequisitions() {
+    toggleGlobalLoader(true, "Cargando requisiciones...");
     try {
-        const res = await fetch(`${API_URL}/requisitions`);
+        const res = await apiFetch(`${API_URL}/requisitions`);
         requisitions = await res.json();
         updateReqTable();
         updateKPIs();
         updateReqSelect();
     } catch (e) {
         showToast('Error cargando requisiciones', 'error');
+    } finally {
+        toggleGlobalLoader(false);
     }
 }
 
 async function fetchCandidates() {
+    toggleGlobalLoader(true, "Cargando candidatos...");
     try {
-        const res = await fetch(`${API_URL}/candidates`);
+        const res = await apiFetch(`${API_URL}/candidates`);
         candidates = await res.json();
         updateCandTable();
     } catch (e) {
         showToast('Error cargando candidatos', 'error');
+    } finally {
+        toggleGlobalLoader(false);
     }
 }
 
@@ -221,7 +227,7 @@ formRequisition.addEventListener('submit', async (e) => {
     };
 
     try {
-        const res = await fetch(`${API_URL}/requisitions`, {
+        const res = await apiFetch(`${API_URL}/requisitions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(newReq)
@@ -251,7 +257,7 @@ formCandidate.addEventListener('submit', async (e) => {
     };
 
     try {
-        const res = await fetch(`${API_URL}/candidates`, {
+        const res = await apiFetch(`${API_URL}/candidates`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(newCand)
@@ -281,7 +287,7 @@ window.deleteRequisition = async (id) => {
     if (!confirm("¿Deseas eliminar esta requisición?")) return;
 
     try {
-        const res = await fetch(`${API_URL}/requisitions/${id}`, { method: 'DELETE' });
+        const res = await apiFetch(`${API_URL}/requisitions/${id}`, { method: 'DELETE' });
         const data = await res.json();
 
         if (res.ok) {
@@ -300,7 +306,7 @@ window.deleteCandidate = async (id) => {
     if (!confirm("¿Deseas eliminar a este candidato?")) return;
 
     try {
-        const res = await fetch(`${API_URL}/candidates/${id}`, { method: 'DELETE' });
+        const res = await apiFetch(`${API_URL}/candidates/${id}`, { method: 'DELETE' });
         if (res.ok) {
             showToast('Candidato eliminado', 'success');
             fetchRequisitions();
@@ -331,8 +337,6 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-// Start
-init();
 // ==========================================
 // M2: MODULE NAVIGATION (SPA)
 // ==========================================
@@ -516,7 +520,7 @@ async function loadModule2Data() {
 
     // Populate Formadores (Trainers) from DB
     try {
-        const uRes = await fetch(`${API_URL}/users`);
+        const uRes = await apiFetch(`${API_URL}/users`);
         if (uRes.ok) {
             const m2Users = await uRes.json();
             const formadorSelect = document.getElementById('w-formador');
@@ -575,7 +579,7 @@ async function loadModule2Data() {
 
 async function fetchWaves() {
     try {
-        const res = await fetch(`${API_URL}/waves`);
+        const res = await apiFetch(`${API_URL}/waves`);
         waves = await res.json();
         updateWavesTable();
         updateWavesKPI();
@@ -668,7 +672,7 @@ async function getHolidaysForYears(startYear, endYear) {
     for (let y = startYear; y <= endYear; y++) {
         if (!holidayCache[y]) {
             try {
-                const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${y}/CO`);
+                const res = await apiFetch(`https://date.nager.at/api/v3/PublicHolidays/${y}/CO`);
                 if (res.ok) {
                     const data = await res.json();
                     holidayCache[y] = data.map(h => h.date);
@@ -841,7 +845,7 @@ formWave.addEventListener('submit', async (e) => {
     };
 
     try {
-        const res = await fetch(`${API_URL}/waves`, {
+        const res = await apiFetch(`${API_URL}/waves`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(newWave)
@@ -879,6 +883,46 @@ const m3ListAssigned = document.getElementById('m3-list-assigned');
 const m3Search = document.getElementById('m3-search');
 const btnGoChecklist = document.getElementById('btn-go-checklist');
 
+// ==========================================
+// API FETCH WRAPPER (JWT INJECTOR)
+// ==========================================
+async function apiFetch(url, options = {}) {
+    // Determine headers
+    const headers = options.headers || {};
+
+    // Add default Content-Type if a body is present and not explicitly set
+    if (options.body && !headers['Content-Type']) {
+        headers['Content-Type'] = 'application/json';
+    }
+
+    // Inject JWT token if available
+    const token = localStorage.getItem('bpo_token');
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    options.headers = headers;
+
+    const response = await fetch(url, options);
+
+    // If server responds with 401 Unauthorized or 403 Forbidden, user must log back in
+    if (response.status === 401 || response.status === 403) {
+        // Only force logout if the user was supposedly authenticated
+        if (localStorage.getItem('bpo_token')) {
+            showToast('Sesión caducada o acceso denegado. Por favor, inicia sesión nuevamente.', 'error');
+            localStorage.removeItem('bpo_user');
+            localStorage.removeItem('bpo_token');
+            currentUser = null;
+            setTimeout(() => {
+                checkAuth();
+            }, 2000);
+            throw new Error('JWT Token Inválido o Expirado');
+        }
+    }
+
+    return response;
+}
+
 // Navigation Button Back to M2
 const btnBackM2 = document.getElementById('btn-back-m2');
 btnBackM2.addEventListener('click', () => {
@@ -901,7 +945,7 @@ if (btnGoChecklist) {
 window.openModule3 = async (waveId) => {
     try {
         // Fetch Wave Info
-        const res = await fetch(`${API_URL}/waves/${waveId}`);
+        const res = await apiFetch(`${API_URL}/waves/${waveId}`);
         if (!res.ok) throw new Error('No se pudo cargar la wave');
         currentWaveM3 = await res.json();
 
@@ -944,7 +988,7 @@ async function loadM3Data() {
     try {
         console.log("Loading M3 data for wave:", currentWaveM3.id);
         // 1. Fetch Available (Candidates with status='selected' and wave_id IS NULL)
-        const resAvail = await fetch(`${API_URL}/candidates/available`);
+        const resAvail = await apiFetch(`${API_URL}/candidates/available`);
         if (!resAvail.ok) throw new Error("Failed fetching available candidates");
 
         const allAvailable = await resAvail.json();
@@ -962,7 +1006,7 @@ async function loadM3Data() {
         m3AvailableCandidates = allAvailable.filter(cand => allowedReqIds.includes(cand.requisicion_id));
 
         // 2. Fetch Assigned (Candidates with wave_id = currentWaveId)
-        const resAssigned = await fetch(`${API_URL}/waves/${currentWaveM3.id}/candidates`);
+        const resAssigned = await apiFetch(`${API_URL}/waves/${currentWaveM3.id}/candidates`);
         if (!resAssigned.ok) throw new Error("Failed fetching assigned candidates");
         m3AssignedCandidates = await resAssigned.json();
 
@@ -1095,7 +1139,7 @@ window.assignCandidateM3 = async (candId) => {
     }
 
     try {
-        const res = await fetch(`${API_URL}/candidates/${candId}/assign`, {
+        const res = await apiFetch(`${API_URL}/candidates/${candId}/assign`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ wave_id: currentWaveM3.id })
@@ -1115,7 +1159,7 @@ window.assignCandidateM3 = async (candId) => {
 
 window.unassignCandidateM3 = async (candId) => {
     try {
-        const res = await fetch(`${API_URL}/candidates/${candId}/unassign`, {
+        const res = await apiFetch(`${API_URL}/candidates/${candId}/unassign`, {
             method: 'PUT'
         });
         if (res.ok) {
@@ -1157,12 +1201,12 @@ const m4KpiReal = document.getElementById('m4-kpi-real');
 const m4RealParticipants = document.getElementById('m4-real-participants');
 const m4RealDays = document.getElementById('m4-real-days');
 const m4DeviationBadge = document.getElementById('m4-deviation-badge');
-const tableM4Checklist = document.getElementById('m4-checklist-body');
 const btnM4Save = document.getElementById('btn-m4-save');
 
 window.openModule4 = async (waveId) => {
+    toggleGlobalLoader(true, "Iniciando Módulo de Nómina M4...");
     try {
-        const res = await fetch(`${API_URL}/waves/${waveId}`);
+        const res = await apiFetch(`${API_URL}/waves/${waveId}`);
         if (!res.ok) throw new Error('Error cargando wave');
         currentWaveM4 = await res.json();
 
@@ -1175,6 +1219,8 @@ window.openModule4 = async (waveId) => {
         await loadM4Data();
     } catch (e) {
         showToast(e.message, 'error');
+    } finally {
+        toggleGlobalLoader(false);
     }
 };
 
@@ -1187,7 +1233,7 @@ async function loadM4Data() {
     const tarifaCalculada = parseFloat(currentWaveM4.salario_mensual_referencia) / 220;
     const tarifaFinalUI = parseFloat(currentWaveM4.tarifa_hora) || tarifaCalculada || 0;
 
-    m4BadgeHoras.textContent = `Horas plan: ${currentWaveM4.horas_planeadas_dia}h`;
+    m4BadgeHoras.textContent = `Horas plan: ${currentWaveM4.horas_planeadas_dia} h`;
     m4BadgeAgentes.textContent = `Agentes: ${currentWaveM4.cantidad_agentes}`;
     m4BadgeTarifa.textContent = `Tarifa: ${formatter.format(tarifaFinalUI)}/h`;
 
@@ -1214,14 +1260,14 @@ async function loadM4Data() {
     try {
         // Fetch actual real participants assigned in M3
         try {
-            const pRes = await fetch(`${API_URL}/waves/${currentWaveM4.id}/participants`);
+            const pRes = await apiFetch(`${API_URL}/waves/${currentWaveM4.id}/participants`);
             const participants = await pRes.json();
             currentWaveM4.real_agentes = participants ? participants.length : currentWaveM4.cantidad_agentes;
         } catch (err) {
             currentWaveM4.real_agentes = currentWaveM4.cantidad_agentes; // Fallback to M2 planeado
         }
 
-        const res = await fetch(`${API_URL}/waves/${currentWaveM4.id}/checklist`);
+        const res = await apiFetch(`${API_URL}/waves/${currentWaveM4.id}/checklist`);
         m4ChecklistData = await res.json();
 
         if (m4ChecklistData.length === 0) {
@@ -1240,7 +1286,7 @@ async function getHolidaysForYears(startYear, endYear) {
     const festivos = [];
     for (let y = startYear; y <= endYear; y++) {
         try {
-            const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${y}/CO`);
+            const res = await apiFetch(`https://date.nager.at/api/v3/PublicHolidays/${y}/CO`);
             if (res.ok) {
                 const data = await res.json();
                 festivos.push(...data.map(h => h.date));
@@ -1384,6 +1430,10 @@ function recalculateM4Financials() {
 }
 
 function renderM4Table() {
+    // Relying on global tableM4Checklist declared at top
+    tableM4Checklist = document.getElementById('m4-checklist-body');
+    if (!tableM4Checklist) return;
+
     tableM4Checklist.innerHTML = '';
 
     // Wave Lockdown UI Logic
@@ -1470,7 +1520,7 @@ window.updateM4Row = (index, field, value) => {
 
 btnM4Save.addEventListener('click', async () => {
     try {
-        const res = await fetch(`${API_URL}/waves/${currentWaveM4.id}/checklist`, {
+        const res = await apiFetch(`${API_URL}/waves/${currentWaveM4.id}/checklist`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ items: m4ChecklistData })
@@ -1519,11 +1569,11 @@ async function loadM5Data() {
     m5Subtitle.textContent = "Preparación para facturación y estado final";
 
     try {
-        const res = await fetch(`${API_URL}/waves/${globalActiveWaveId}/results`);
+        const res = await apiFetch(`${API_URL}/waves/${globalActiveWaveId}/results`);
         m5ResultsData = await res.json();
 
         // Disable "Finalizar Wave" Button if it's already finished
-        const waveReq = await fetch(`${API_URL}/waves/${globalActiveWaveId}`);
+        const waveReq = await apiFetch(`${API_URL}/waves/${globalActiveWaveId}`);
         const waveData = await waveReq.json();
 
         if (waveData.estado === 'finalizada') {
@@ -1599,7 +1649,7 @@ if (btnM5Close) {
         }));
 
         try {
-            const res = await fetch(`${API_URL}/waves/${globalActiveWaveId}/close`, {
+            const res = await apiFetch(`${API_URL}/waves/${globalActiveWaveId}/close`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ participantes: payload })
@@ -1633,6 +1683,60 @@ const sidebarUserName = document.getElementById('sidebar-user-name');
 // User State
 let currentUser = null;
 
+// ==========================================
+// AUTO-LOGOUT (INACTIVITY TIMEOUT)
+// ==========================================
+let inactivityTimer;
+const INACTIVITY_LIMIT_MS = 15 * 60 * 1000; // 15 minutos en milisegundos
+
+function resetInactivityTimer() {
+    clearTimeout(inactivityTimer);
+
+    // Solo contar el tiempo si hay un usuario logueado
+    if (currentUser) {
+        inactivityTimer = setTimeout(forceLogout, INACTIVITY_LIMIT_MS);
+    }
+}
+
+function forceLogout() {
+    if (currentUser) {
+        showToast('Tu sesión ha expirado por inactividad. Ingresa nuevamente.', 'error');
+        btnLogout.click(); // Re-usa la lógica del botón de salir
+    }
+}
+
+// Escuchar movimiento del usuario
+['mousemove', 'keydown', 'scroll', 'click'].forEach(evt => {
+    document.addEventListener(evt, resetInactivityTimer, true);
+});
+
+// ==========================================
+// GLOBAL LOADING SPINNER
+// ==========================================
+function toggleGlobalLoader(show, message = "Cargando...") {
+    let loader = document.getElementById('global-loader');
+    if (!loader && show) {
+        loader = document.createElement('div');
+        loader.id = 'global-loader';
+        loader.innerHTML = `
+            <div class="loader-content">
+                <div class="spinner"></div>
+                <div id="loader-message" style="margin-top:15px; font-weight:bold;">${message}</div>
+            </div>
+        `;
+        document.body.appendChild(loader);
+    }
+
+    if (loader) {
+        if (show) {
+            document.getElementById('loader-message').textContent = message;
+            loader.style.display = 'flex';
+        } else {
+            loader.style.display = 'none';
+        }
+    }
+}
+
 function checkAuth() {
     const saved = localStorage.getItem('bpo_user');
     if (saved) {
@@ -1649,11 +1753,27 @@ function checkAuth() {
             return; // Halt execution, do not load app modules
         }
 
+        // Token check
+        const token = localStorage.getItem('bpo_token');
+        if (!token) {
+            // Edge case: has user object but no token (e.g., old legacy session)
+            localStorage.removeItem('bpo_user');
+            currentUser = null;
+            checkAuth();
+            return;
+        }
+
+        // Iniciar temporizador de inactividad
+        resetInactivityTimer();
+
         loginView.style.display = 'none';
         mainLayout.style.display = 'flex';
         applyPermissions();
         init(); // Starts loading M1 default view
     } else {
+        // Pausar temporizador si no hay sesión
+        clearTimeout(inactivityTimer);
+
         loginView.style.display = 'flex';
         mainLayout.style.display = 'none';
 
@@ -1667,7 +1787,7 @@ formLogin.addEventListener('submit', async (e) => {
     loginError.textContent = '';
 
     try {
-        const res = await fetch(`${API_URL}/login`, {
+        const res = await apiFetch(`${API_URL}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1680,6 +1800,9 @@ formLogin.addEventListener('submit', async (e) => {
 
         if (res.ok) {
             localStorage.setItem('bpo_user', JSON.stringify(data.user));
+            if (data.token) {
+                localStorage.setItem('bpo_token', data.token);
+            }
             currentUser = data.user;
             loginCedula.value = '';
             loginPassword.value = '';
@@ -1695,6 +1818,7 @@ formLogin.addEventListener('submit', async (e) => {
 btnLogout.addEventListener('click', (e) => {
     e.preventDefault();
     localStorage.removeItem('bpo_user');
+    localStorage.removeItem('bpo_token');
     currentUser = null;
     checkAuth();
 });
@@ -1719,9 +1843,8 @@ if (formForcePassword) {
         }
 
         try {
-            const res = await fetch(`${API_URL}/users/change-password`, {
+            const res = await apiFetch(`${API_URL}/users/change-password`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     id: currentUser.id,
                     newPassword: pwd1
@@ -1866,8 +1989,8 @@ let systemUsers = [];
 async function loadRbacData() {
     try {
         const [resUsers, resRoles] = await Promise.all([
-            fetch(`${API_URL}/users`),
-            fetch(`${API_URL}/roles`)
+            apiFetch(`${API_URL}/users`),
+            apiFetch(`${API_URL}/roles`)
         ]);
 
         systemUsers = await resUsers.json();
@@ -1957,19 +2080,18 @@ formUser.addEventListener('submit', async (e) => {
     };
 
     try {
-        const res = await fetch(`${API_URL}/users`, {
+        const res = await apiFetch(`${API_URL}/users`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(uData)
         });
 
-        const result = await res.json();
+        const data = await res.json();
         if (res.ok) {
             showToast('Usuario creado correctamente', 'success');
             formUser.reset();
             loadRbacData();
         } else {
-            showToast(result.error || 'Error creando usuario', 'error');
+            showToast(data.error || 'Error creando usuario', 'error');
         }
     } catch (e) {
         showToast('Error de conexión', 'error');
@@ -1979,7 +2101,7 @@ formUser.addEventListener('submit', async (e) => {
 window.deleteUser = async (id) => {
     if (!confirm('¿Estás seguro de eliminar permanentemente este usuario?')) return;
     try {
-        const res = await fetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
+        const res = await apiFetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
         if (res.ok) {
             showToast('Usuario eliminado', 'success');
             loadRbacData();
@@ -2058,9 +2180,8 @@ window.saveRolePermissions = async (rolId, rolNombre) => {
     const finalPerms = Array.from(checkboxes).map(cb => cb.value);
 
     try {
-        const res = await fetch(`${API_URL}/roles/${rolId}`, {
+        const res = await apiFetch(`${API_URL}/roles/${rolId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ permisos: finalPerms })
         });
 
