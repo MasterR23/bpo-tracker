@@ -60,22 +60,36 @@ if (process.env.DB_SSL === 'true') {
 let db;
 
 function initializeDatabaseConnection() {
-    db = mysql.createConnection({
+    // Usar Pool en lugar de Connection simple para auto-manejar desconexiones por inactividad
+    db = mysql.createPool({
         ...dbConfig,
-        database: process.env.DB_NAME || 'bpo_tracker'
+        database: process.env.DB_NAME || 'bpo_tracker',
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0
     });
 
-    db.connect((err) => {
+    db.getConnection((err, connection) => {
         if (err) {
-            console.error('Error connecting to bpo_tracker database:', err.message);
+            console.error('Error connecting to bpo_tracker database pool:', err.message);
+            if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+                console.error('Database connection was closed.');
+            }
+            if (err.code === 'ER_CON_COUNT_ERROR') {
+                console.error('Database has too many connections.');
+            }
+            if (err.code === 'ECONNREFUSED') {
+                console.error('Database connection was refused.');
+            }
             return;
         }
-        console.log("Connected to bpo_tracker database.");
+        if (connection) connection.release();
+        console.log("Connected to bpo_tracker database successfully via Pool.");
         createTables();
     });
 }
 
-// Ensure the connection is established linearly on startup
+// Ensure the pool is established linearly on startup
 initializeDatabaseConnection();
 
 function createTables() {
