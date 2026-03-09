@@ -21,7 +21,17 @@ const JWT_SECRET = process.env.JWT_SECRET || 'bpo-tracker-super-secret-key-2026'
 const app = express();
 const PORT = 3000;
 
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+const allowedOrigins = ['http://localhost:3000', 'https://bpo-tracker.onrender.com'];
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Bloqueado por CORS'));
+        }
+    },
+    credentials: true
+}));
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 app.use(express.json());
