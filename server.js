@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
@@ -20,40 +21,35 @@ const JWT_SECRET = process.env.JWT_SECRET || 'bpo-tracker-super-secret-key-2026'
 const app = express();
 const PORT = 3000;
 
-app.use(cors());
+app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
 app.use(express.json());
+app.use((req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+    next();
+});
 app.use(express.static(path.join(__dirname)));
 
 // 1. Initial Connection to create DB if it doesn't exist
 const dbConfig = {
     host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root', // Default XAMPP user
-    password: process.env.DB_PASSWORD || '', // Default XAMPP password
-    port: process.env.DB_PORT || 3306 // Render usually needs the port specified
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    port: process.env.DB_PORT || 3306
 };
 
-const dbInitial = mysql.createConnection(dbConfig);
+if (process.env.DB_SSL === 'true') {
+    dbConfig.ssl = { rejectUnauthorized: false };
+}
 
-dbInitial.connect((err) => {
-    if (err) {
-        console.error('Error connecting to MySQL:', err.message);
-        console.log('Si estás en local, asegúrate de que MySQL está corriendo en XAMPP. Si estás en Render, verifica tus variables de entorno.');
-        return;
-    }
-
-    dbInitial.query("CREATE DATABASE IF NOT EXISTS bpo_tracker", (err) => {
-        if (err) throw err;
-        console.log("Database bpo_tracker ready.");
-
-        dbInitial.end();
-        initializeDatabaseConnection();
-    });
-});
-
+// 2. Connect to the specific database directly
 let db;
 
 function initializeDatabaseConnection() {
-    // 2. Connect to the specific database
     db = mysql.createConnection({
         ...dbConfig,
         database: process.env.DB_NAME || 'bpo_tracker'
@@ -68,6 +64,9 @@ function initializeDatabaseConnection() {
         createTables();
     });
 }
+
+// Ensure the connection is established linearly on startup
+initializeDatabaseConnection();
 
 function createTables() {
     const createReqTable = `
@@ -500,11 +499,9 @@ app.put('/api/waves/:id/checklist', verifyToken, requireCoordinator, (req, res) 
 
 // Middleware para proteger rutas con JWT
 function verifyToken(req, res, next) {
-    const bearerHeader = req.headers['authorization'];
-    if (typeof bearerHeader !== 'undefined') {
-        const bearer = bearerHeader.split(' ');
-        const bearerToken = bearer[1];
-        jwt.verify(bearerToken, JWT_SECRET, (err, decoded) => {
+    const token = req.cookies.bpo_token;
+    if (token) {
+        jwt.verify(token, JWT_SECRET, (err, decoded) => {
             if (err) {
                 return res.status(403).json({ error: "Token inválido o expirado" });
             }
@@ -556,8 +553,12 @@ app.post('/api/login', loginLimiter, (req, res) => {
 
         // Parse permissions array for convenience
         try {
-            user.permisos = JSON.parse(user.permisos);
-        } catch (e) { user.permisos = []; }
+            if (typeof user.permisos === 'string') {
+                user.permisos = JSON.parse(user.permisos);
+            }
+        } catch (e) {
+            user.permisos = [];
+        }
 
         // Generate JWT Token
         const token = jwt.sign(
@@ -566,8 +567,52 @@ app.post('/api/login', loginLimiter, (req, res) => {
             { expiresIn: '12h' }
         );
 
-        res.json({ success: true, user, token });
+        // Emit HttpOnly Cookie protecting against CSRF with SameSite Strict
+        res.cookie('bpo_token', token, {
+            httpOnly: true,
+            secure: false, // Set to true if using HTTPS in production
+            sameSite: 'Strict',
+            maxAge: 12 * 60 * 60 * 1000 // 12 Hours
+        });
+
+        res.json({ success: true, user });
     });
+});
+
+// Endpoint: Validate Session for Frontend State
+app.get('/api/auth/me', verifyToken, (req, res) => {
+    const query = `
+        SELECT u.*, r.nombre_rol, r.permisos 
+        FROM users u 
+        JOIN roles r ON u.rol_id = r.id 
+        WHERE u.id = ?
+    `;
+    db.query(query, [req.user.id], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (results.length === 0) return res.status(401).json({ error: "Usuario no encontrado" });
+
+        const user = results[0];
+        delete user.password_hash;
+
+        try {
+            if (typeof user.permisos === 'string') {
+                user.permisos = JSON.parse(user.permisos);
+            }
+        } catch (e) {
+            user.permisos = [];
+        }
+
+        res.json({ user });
+    });
+});
+
+// Endpoint: Logout / Destroy Session Cookie
+app.post('/api/logout', (req, res) => {
+    res.clearCookie('bpo_token', {
+        httpOnly: true,
+        sameSite: 'Strict'
+    });
+    res.json({ success: true, message: "Sesión Finalizada" });
 });
 
 // --- USERS CRUD ---

@@ -156,7 +156,7 @@ function updateReqTable() {
             <td>${formatter.format(req.salario)}</td>
             <td>${formatDate(req.fecha_ingreso)}</td>
             <td>
-                <button onclick="deleteRequisition(${req.id})" class="btn-danger-sm"><i class="fa-solid fa-trash"></i> Eliminar</button>
+                <button type="button" onclick="deleteRequisition(${req.id})" class="btn-danger-sm"><i class="fa-solid fa-trash"></i> Eliminar</button>
             </td>
         `;
         tableReqBody.appendChild(tr);
@@ -205,7 +205,7 @@ function updateCandTable() {
                 </span>
             </td>
             <td>
-                <button onclick="deleteCandidate(${cand.id})" class="btn-danger-sm"><i class="fa-solid fa-trash"></i> Eliminar</button>
+                <button type="button" onclick="deleteCandidate(${cand.id})" class="btn-danger-sm"><i class="fa-solid fa-trash"></i> Eliminar</button>
             </td>
         `;
         tableCandBody.appendChild(tr);
@@ -603,7 +603,7 @@ function updateWavesTable() {
 
     waves.forEach(w => {
         const tr = document.createElement('tr');
-        const proj = JSON.parse(w.recargos); // Just parsing to show something, ideally stored differently
+        const proj = typeof w.recargos === 'string' ? JSON.parse(w.recargos) : (w.recargos || {});
 
         tr.innerHTML = `
             <td>
@@ -672,7 +672,7 @@ async function getHolidaysForYears(startYear, endYear) {
     for (let y = startYear; y <= endYear; y++) {
         if (!holidayCache[y]) {
             try {
-                const res = await apiFetch(`https://date.nager.at/api/v3/PublicHolidays/${y}/CO`);
+                const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${y}/CO`);
                 if (res.ok) {
                     const data = await res.json();
                     holidayCache[y] = data.map(h => h.date);
@@ -895,11 +895,8 @@ async function apiFetch(url, options = {}) {
         headers['Content-Type'] = 'application/json';
     }
 
-    // Inject JWT token if available
-    const token = localStorage.getItem('bpo_token');
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
+    // Inject CSRF mitigation configuration: Always send secure cookies
+    options.credentials = 'include';
 
     options.headers = headers;
 
@@ -1260,7 +1257,7 @@ async function loadM4Data() {
     try {
         // Fetch actual real participants assigned in M3
         try {
-            const pRes = await apiFetch(`${API_URL}/waves/${currentWaveM4.id}/participants`);
+            const pRes = await apiFetch(`${API_URL}/waves/${currentWaveM4.id}/candidates`);
             const participants = await pRes.json();
             currentWaveM4.real_agentes = participants ? participants.length : currentWaveM4.cantidad_agentes;
         } catch (err) {
@@ -1286,7 +1283,7 @@ async function getHolidaysForYears(startYear, endYear) {
     const festivos = [];
     for (let y = startYear; y <= endYear; y++) {
         try {
-            const res = await apiFetch(`https://date.nager.at/api/v3/PublicHolidays/${y}/CO`);
+            const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${y}/CO`);
             if (res.ok) {
                 const data = await res.json();
                 festivos.push(...data.map(h => h.date));
@@ -1737,49 +1734,54 @@ function toggleGlobalLoader(show, message = "Cargando...") {
     }
 }
 
-function checkAuth() {
-    const saved = localStorage.getItem('bpo_user');
-    if (saved) {
-        currentUser = JSON.parse(saved);
-
-        // Security check: Force password change on first login
-        if (currentUser.must_change_password) {
-            loginView.style.display = 'none';
-            mainLayout.style.display = 'none';
-            if (typeof adminLayout !== 'undefined' && adminLayout) adminLayout.style.display = 'none';
-
-            const modalForce = document.getElementById('modal-force-password');
-            if (modalForce) modalForce.style.display = 'flex';
-            return; // Halt execution, do not load app modules
-        }
-
-        // Token check
-        const token = localStorage.getItem('bpo_token');
-        if (!token) {
-            // Edge case: has user object but no token (e.g., old legacy session)
-            localStorage.removeItem('bpo_user');
-            currentUser = null;
-            checkAuth();
-            return;
-        }
-
-        // Iniciar temporizador de inactividad
-        resetInactivityTimer();
-
-        loginView.style.display = 'none';
-        mainLayout.style.display = 'flex';
-        applyPermissions();
-        init(); // Starts loading M1 default view
-    } else {
-        // Pausar temporizador si no hay sesión
-        clearTimeout(inactivityTimer);
-
-        loginView.style.display = 'flex';
-        mainLayout.style.display = 'none';
-
-        const modalForce = document.getElementById('modal-force-password');
-        if (modalForce) modalForce.style.display = 'none';
+async function checkAuth() {
+    const hasPastSession = localStorage.getItem('bpo_user');
+    if (hasPastSession) {
+        toggleGlobalLoader(true, "Verificando credenciales seguras...");
     }
+
+    try {
+        const res = await fetch(`${API_URL}/auth/me`, { credentials: 'include' });
+        if (res.ok) {
+            const data = await res.json();
+            currentUser = data.user;
+            localStorage.setItem('bpo_user', JSON.stringify(currentUser)); // Store UX basic data
+
+            // Security check: Force password change on first login
+            if (currentUser.must_change_password) {
+                loginView.style.display = 'none';
+                mainLayout.style.display = 'none';
+                if (typeof adminLayout !== 'undefined' && adminLayout) adminLayout.style.display = 'none';
+
+                const modalForce = document.getElementById('modal-force-password');
+                if (modalForce) modalForce.style.display = 'flex';
+                return;
+            }
+
+            resetInactivityTimer();
+            loginView.style.display = 'none';
+            mainLayout.style.display = 'flex';
+            applyPermissions();
+            init();
+        } else {
+            forceVisualLogout();
+        }
+    } catch (e) {
+        forceVisualLogout();
+    } finally {
+        toggleGlobalLoader(false);
+    }
+}
+
+function forceVisualLogout() {
+    localStorage.removeItem('bpo_user');
+    currentUser = null;
+    clearTimeout(inactivityTimer);
+    loginView.style.display = 'flex';
+    mainLayout.style.display = 'none';
+
+    const modalForce = document.getElementById('modal-force-password');
+    if (modalForce) modalForce.style.display = 'none';
 }
 
 formLogin.addEventListener('submit', async (e) => {
@@ -1800,9 +1802,6 @@ formLogin.addEventListener('submit', async (e) => {
 
         if (res.ok) {
             localStorage.setItem('bpo_user', JSON.stringify(data.user));
-            if (data.token) {
-                localStorage.setItem('bpo_token', data.token);
-            }
             currentUser = data.user;
             loginCedula.value = '';
             loginPassword.value = '';
@@ -1815,12 +1814,12 @@ formLogin.addEventListener('submit', async (e) => {
     }
 });
 
-btnLogout.addEventListener('click', (e) => {
+btnLogout.addEventListener('click', async (e) => {
     e.preventDefault();
-    localStorage.removeItem('bpo_user');
-    localStorage.removeItem('bpo_token');
-    currentUser = null;
-    checkAuth();
+    try {
+        await fetch(`${API_URL}/logout`, { method: 'POST', credentials: 'include' });
+    } catch (err) { }
+    forceVisualLogout();
 });
 
 // Force Password Change Form Logic
@@ -2029,7 +2028,7 @@ function renderUsersTable(users) {
             </td>
             <td style="vertical-align: middle;"><span class="badge ${roleBadgeClass}">${u.nombre_rol}</span></td>
             <td style="vertical-align: middle;">
-                ${u.id === 1 ? '<span class="badge badge-training" style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted);"><i class="fa-solid fa-lock"></i> Sistema</span>' : `<button class="btn-danger-sm" onclick="deleteUser(${u.id})"><i class="fa-solid fa-trash"></i> Eliminar</button>`}
+                ${u.id === 1 ? '<span class="badge badge-training" style="background: rgba(255, 255, 255, 0.05); color: var(--text-muted);"><i class="fa-solid fa-lock"></i> Sistema</span>' : `<button type="button" class="btn-danger-sm" onclick="deleteUser(${u.id})"><i class="fa-solid fa-trash"></i> Eliminar</button>`}
             </td>
         `;
         tableUsersBody.appendChild(tr);
