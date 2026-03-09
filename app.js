@@ -905,14 +905,15 @@ async function apiFetch(url, options = {}) {
     // If server responds with 401 Unauthorized or 403 Forbidden, user must log back in
     if (response.status === 401 || response.status === 403) {
         // Only force logout if the user was supposedly authenticated
-        if (localStorage.getItem('bpo_token')) {
+        if (localStorage.getItem('bpo_user') || currentUser) {
             showToast('Sesión caducada o acceso denegado. Por favor, inicia sesión nuevamente.', 'error');
-            localStorage.removeItem('bpo_user');
-            localStorage.removeItem('bpo_token');
-            currentUser = null;
-            setTimeout(() => {
-                checkAuth();
-            }, 2000);
+            // Re-use our centralized visual logout function that safely hides mainLayout
+            if (typeof forceVisualLogout === 'function') {
+                forceVisualLogout();
+            } else {
+                loginView.style.display = 'flex';
+                mainLayout.style.display = 'none';
+            }
             throw new Error('JWT Token Inválido o Expirado');
         }
     }
