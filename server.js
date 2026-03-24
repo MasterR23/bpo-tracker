@@ -621,7 +621,7 @@ app.post('/api/login', loginLimiter, (req, res) => {
 
         // Generate JWT Token
         const token = jwt.sign(
-            { id: user.id, rol_id: user.rol_id, nombre: user.nombre },
+            { id: user.id, rol_id: user.rol_id, nombre: user.nombre_completo, permisos: user.permisos },
             JWT_SECRET,
             { expiresIn: '12h' }
         );
