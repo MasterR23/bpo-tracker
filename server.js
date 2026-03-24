@@ -564,8 +564,23 @@ function requireAdmin(req, res, next) {
 }
 
 function requireCoordinator(req, res, next) {
-    if (req.user && (req.user.rol_id === 1 || req.user.rol_id === 4)) next();
-    else res.status(403).json({ error: "Acceso denegado: Se requieren permisos de Coordinador o superior" });
+    if (!req.user) return res.status(401).json({ error: "No autenticado" });
+    if (req.user.rol_id === 1) return next(); // Admin everything
+    
+    // Dynamic Role-Based Access Control logic based on endpoint
+    let requiredPerm = null;
+    if (req.originalUrl.includes('/requisitions') || req.originalUrl.includes('/candidates')) requiredPerm = 'm1_edit';
+    else if (req.originalUrl.includes('/waves') && req.originalUrl.includes('/checklist')) requiredPerm = 'm4_edit';
+    else if (req.originalUrl.includes('/waves') && req.originalUrl.includes('/close')) requiredPerm = 'm5_edit';
+    else if (req.originalUrl.includes('/waves')) requiredPerm = 'm2_edit';
+
+    try {
+        const p = typeof req.user.permisos === 'string' ? JSON.parse(req.user.permisos) : (req.user.permisos || []);
+        if (requiredPerm && p.includes(requiredPerm)) return next();
+        if (req.user.rol_id === 4) return next(); // Fallback for vanilla Coordinators
+    } catch(e) {}
+
+    res.status(403).json({ error: "Acceso denegado: Se requieren permisos avanzados" });
 }
 
 app.post('/api/login', loginLimiter, (req, res) => {

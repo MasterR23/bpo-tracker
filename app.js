@@ -924,20 +924,25 @@ async function apiFetch(url, options = {}) {
 
     const response = await fetch(url, options);
 
-    // If server responds with 401 Unauthorized or 403 Forbidden, user must log back in
-    if (response.status === 401 || response.status === 403) {
+    // If server responds with 401 Unauthorized, user must log back in
+    if (response.status === 401) {
         // Only force logout if the user was supposedly authenticated
         if (localStorage.getItem('bpo_user') || currentUser) {
-            showToast('Sesión caducada o acceso denegado. Por favor, inicia sesión nuevamente.', 'error');
-            // Re-use our centralized visual logout function that safely hides mainLayout
+            showToast('Sesión caducada. Por favor, inicia sesión nuevamente.', 'error');
             if (typeof forceVisualLogout === 'function') {
                 forceVisualLogout();
             } else {
                 loginView.style.display = 'flex';
                 mainLayout.style.display = 'none';
             }
-            throw new Error('JWT Token Inválido o Expirado');
+            throw new Error('JWT Token Expirado');
         }
+    }
+
+    // If server responds with 403 Forbidden, user lacks permissions
+    if (response.status === 403) {
+        showToast('Acceso denegado: No tienes permisos para esta acción.', 'error');
+        throw new Error('Permisos Insuficientes');
     }
 
     return response;
@@ -1913,11 +1918,11 @@ function applyPermissions() {
     // Content Permissions
     // M1 Add Form
     if (!p.includes('m1_edit')) {
-        if (formRequisition) formRequisition.parentElement.style.display = 'none';
-        if (formCandidate) formCandidate.parentElement.style.display = 'none';
+        if (formRequisition) formRequisition.parentElement.parentElement.style.display = 'none';
+        if (formCandidate) formCandidate.parentElement.parentElement.style.display = 'none';
     } else {
-        if (formRequisition) formRequisition.parentElement.style.display = 'block';
-        if (formCandidate) formCandidate.parentElement.style.display = 'block';
+        if (formRequisition) formRequisition.parentElement.parentElement.style.display = 'block';
+        if (formCandidate) formCandidate.parentElement.parentElement.style.display = 'block';
     }
 
     // M2 Edit
