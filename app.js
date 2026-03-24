@@ -148,6 +148,8 @@ function updateReqTable() {
         // Progress of spots
         const isFull = req.ocupados >= req.cupos;
         const spotColor = isFull ? 'color: var(--danger); font-weight:bold;' : 'color: var(--success);';
+        
+        const canEditM1 = currentUser && (currentUser.permisos || []).includes('m1_edit');
 
         tr.innerHTML = `
             <td class="p-name">${req.campana}</td>
@@ -156,7 +158,7 @@ function updateReqTable() {
             <td>${formatter.format(req.salario)}</td>
             <td>${formatDate(req.fecha_ingreso)}</td>
             <td>
-                <button type="button" onclick="deleteRequisition(${req.id})" class="btn-danger-sm"><i class="fa-solid fa-trash"></i> Eliminar</button>
+                ${canEditM1 ? `<button type="button" onclick="deleteRequisition(${req.id})" class="btn-danger-sm"><i class="fa-solid fa-trash"></i> Eliminar</button>` : ''}
             </td>
         `;
         tableReqBody.appendChild(tr);
@@ -205,7 +207,7 @@ function updateCandTable() {
                 </span>
             </td>
             <td>
-                <button type="button" onclick="deleteCandidate(${cand.id})" class="btn-danger-sm"><i class="fa-solid fa-trash"></i> Eliminar</button>
+                ${(currentUser && (currentUser.permisos || []).includes('m1_edit')) ? `<button type="button" onclick="deleteCandidate(${cand.id})" class="btn-danger-sm"><i class="fa-solid fa-trash"></i> Eliminar</button>` : ''}
             </td>
         `;
         tableCandBody.appendChild(tr);
@@ -621,7 +623,7 @@ function updateWavesTable() {
                 <button class="btn-secondary" style="padding: 4px 8px; font-size:0.75rem;" onclick="window.openModule3(${w.id})" title="Asignar Participantes"><i class="fa-solid fa-users"></i></button>
                 <button class="btn-primary" style="padding: 4px 8px; font-size:0.75rem;" onclick="window.openModule4(${w.id})" title="Ver Checklist Diario M4"><i class="fa-solid fa-list-check"></i></button>
                 <button class="btn-primary" style="padding: 4px 8px; font-size:0.75rem; background: var(--success); border-color: var(--success);" onclick="window.openModule5(${w.id}, '${w.codigo_wave}')" title="Cierre de Wave M5"><i class="fa-solid fa-flag-checkered"></i></button>
-                <button class="btn-danger-sm" style="padding: 4px 8px; font-size:0.75rem; margin-top:2px;" onclick="window.deleteWave(${w.id})" title="Eliminar Wave"><i class="fa-solid fa-trash"></i></button>
+                ${(currentUser && (currentUser.permisos || []).includes('m2_edit')) ? `<button class="btn-danger-sm" style="padding: 4px 8px; font-size:0.75rem; margin-top:2px;" onclick="window.deleteWave(${w.id})" title="Eliminar Wave"><i class="fa-solid fa-trash"></i></button>` : ''}
             </td>
         `;
         tableWavesBody.appendChild(tr);
@@ -937,12 +939,6 @@ async function apiFetch(url, options = {}) {
             }
             throw new Error('JWT Token Expirado');
         }
-    }
-
-    // If server responds with 403 Forbidden, user lacks permissions
-    if (response.status === 403) {
-        showToast('Acceso denegado: No tienes permisos para esta acción.', 'error');
-        throw new Error('Permisos Insuficientes');
     }
 
     return response;
