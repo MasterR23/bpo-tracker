@@ -424,6 +424,26 @@ app.get('/api/waves', verifyToken, (req, res) => {
     });
 });
 
+// Delete a wave by ID
+app.delete('/api/waves/:id', verifyToken, requireCoordinator, (req, res) => {
+    const waveId = req.params.id;
+    
+    // 1. Unassign all candidates safely
+    db.query('UPDATE candidates SET wave_id = NULL, estado = "disponible" WHERE wave_id = ?', [waveId], () => {
+        // 2. Erase checklists
+        db.query('DELETE FROM checklists WHERE wave_id = ?', [waveId], () => {
+            // 3. Erase results
+            db.query('DELETE FROM waves_results WHERE wave_id = ?', [waveId], () => {
+                // 4. Finally delete the wave
+                db.query(`DELETE FROM waves WHERE id = ?`, [waveId], (err, result) => {
+                    if (err) return res.status(500).json({ error: err.message });
+                    res.json({ success: true });
+                });
+            });
+        });
+    });
+});
+
 // Get a single wave by ID
 app.get('/api/waves/:id', verifyToken, (req, res) => {
     const query = `SELECT * FROM waves WHERE id = ?`;

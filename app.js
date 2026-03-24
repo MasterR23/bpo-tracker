@@ -621,11 +621,33 @@ function updateWavesTable() {
                 <button class="btn-secondary" style="padding: 4px 8px; font-size:0.75rem;" onclick="window.openModule3(${w.id})" title="Asignar Participantes"><i class="fa-solid fa-users"></i></button>
                 <button class="btn-primary" style="padding: 4px 8px; font-size:0.75rem;" onclick="window.openModule4(${w.id})" title="Ver Checklist Diario M4"><i class="fa-solid fa-list-check"></i></button>
                 <button class="btn-primary" style="padding: 4px 8px; font-size:0.75rem; background: var(--success); border-color: var(--success);" onclick="window.openModule5(${w.id}, '${w.codigo_wave}')" title="Cierre de Wave M5"><i class="fa-solid fa-flag-checkered"></i></button>
+                <button class="btn-danger-sm" style="padding: 4px 8px; font-size:0.75rem; margin-top:2px;" onclick="window.deleteWave(${w.id})" title="Eliminar Wave"><i class="fa-solid fa-trash"></i></button>
             </td>
         `;
         tableWavesBody.appendChild(tr);
     });
 }
+
+// Delete Wave from frontend
+window.deleteWave = async (waveId) => {
+    if (!confirm("¿Deseas eliminar esta Wave permanentemente? Se perderán sus checklists resultantes y los participantes serán desasignados.")) return;
+
+    try {
+        toggleGlobalLoader(true, "Eliminando Wave...");
+        const res = await apiFetch(`${API_URL}/waves/${waveId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            showToast("Wave eliminada con éxito", "success");
+            fetchWaves();
+        } else {
+            showToast(data.error || "Error al eliminar la wave", "error");
+        }
+    } catch (e) {
+        showToast("Error de red al intentar eliminar", "error");
+    } finally {
+        toggleGlobalLoader(false);
+    }
+};
 
 // ==========================================
 // M2: AUTO AGENTS LOGIC
